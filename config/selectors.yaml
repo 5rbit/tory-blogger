@@ -1,0 +1,8 @@
+# 네이버 SmartEditor ONE 셀렉터. DOM 변경 시 여기만 수정
+editor:
+  write_url: "https://blog.naver.com/{blog_id}?Redirect=Write"
+  title: ".se-title-text"
+  body: ".se-component-content .se-text-paragraph"
+  tag_input: ".tag_input"
+  publish_button: ".publish_btn__m9KHH"   # 사람이 누른다. 자동 클릭 금지
+  published_url_pattern: "blog.naver.com/{blog_id}/\\d+"

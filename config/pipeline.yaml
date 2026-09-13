@@ -1,0 +1,38 @@
+# 파이프라인 설정
+topic:
+  main: "AI 도구 활용법"
+  sub: "로봇/자동화 개발"
+  seed_keywords: ["Claude 활용", "ChatGPT 업무 자동화", "AI 노트 앱", "AI 코딩 도구", "ROS 입문", "Rust 로봇"]
+
+schedule:
+  posts_per_week: 5
+  publish_days: ["tue", "wed", "thu", "fri", "sat"]
+  max_posts_per_day: 1
+
+content_mix:            # 합계 1.0
+  info: 0.5
+  review: 0.3
+  issue: 0.15
+  hub: 0.05
+
+models:
+  writer: claude-sonnet-5
+  reviewer: claude-fable-5-1
+
+review:
+  min_chars: 1500
+  min_headings: 3
+  min_chars_per_section: 200
+  min_photo_slots: 5
+  min_experience_sentences: 3
+  max_external_links: 1
+  hashtags: [5, 10]
+  max_title_len: 30
+  max_similarity: 0.30
+  min_score: 7
+  max_regenerations: 2
+
+research:
+  min_monthly_volume: 500
+  min_personal_blog_ratio: 0.4
+  candidates_per_week: 100

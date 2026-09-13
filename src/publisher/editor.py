@@ -2,9 +2,10 @@
 from __future__ import annotations
 import time
 from pathlib import Path
-from src.common import CONFIG, env, get_logger, load_yaml
+from src.common import CONFIG, current_experiment, env, get_logger, load_yaml, pipeline_config
 log = get_logger(__name__)
-PROFILE = Path.home() / ".tory-blogger" / "browser"
+def profile_dir() -> Path:
+    return Path.home() / ".tory-blogger" / "browser" / (current_experiment() or "default")
 
 def parse_draft(path: Path) -> tuple[str, str, list[str]]:
     """초안 첫 줄(# 제목), 본문, 해시태그를 분리한다."""
@@ -22,10 +23,10 @@ def fill(draft: Path, dry_run: bool = False) -> str | None:
         log.info("[dry-run] 브라우저 실행 생략")
         return None
     sel = load_yaml(CONFIG / "selectors.yaml")["editor"]
-    blog_id = env("NAVER_BLOG_ID")
+    blog_id = pipeline_config().get("blog_id") or env("NAVER_BLOG_ID")
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
-        ctx = p.chromium.launch_persistent_context(str(PROFILE), headless=False)
+        ctx = p.chromium.launch_persistent_context(str(profile_dir()), headless=False)
         page = ctx.new_page()
         page.goto(sel["write_url"].format(blog_id=blog_id))
         # TODO: 로그인 안 된 경우 사람이 로그인할 때까지 대기

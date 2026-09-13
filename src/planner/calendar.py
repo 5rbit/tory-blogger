@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import asdict
 from datetime import date
-from src.common import DATA, KeywordCandidate, get_logger, pipeline_config, save_yaml
+from src.common import data_dir, KeywordCandidate, get_logger, pipeline_config, save_yaml
 log = get_logger(__name__)
 
 def assign_types(cands: list[KeywordCandidate], n: int, mix: dict[str, float], research: dict | None = None) -> list[KeywordCandidate]:
@@ -23,7 +23,7 @@ def write_week_plan(cands: list[KeywordCandidate], week: str | None = None) -> s
     week = week or date.today().strftime("%Y-W%V")
     research = {**cfg["research"], "intent_words": cfg["topic"].get("intent_words", [])}
     plan = assign_types(cands, cfg["schedule"]["posts_per_week"], cfg["content_mix"], research)
-    path = DATA / "keywords" / f"{week}.yaml"
+    path = data_dir() / "keywords" / f"{week}.yaml"
     save_yaml(path, {"week": week, "posts": [asdict(c) for c in plan]})
     log.info("주간 계획 저장: %s (%d편, 승인 대기)", path, len(plan))
     return str(path)

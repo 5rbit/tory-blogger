@@ -6,4 +6,5 @@
 - 네이버 블로그는 공식 글쓰기 API가 없다. 발행은 **반자동**(초안·에디터 채우기까지 자동, 발행 클릭은 사람)
 - 완전 자동 발행, 대량 발행, 복붙 글은 금지 (검색 누락·계정 제재 위험)
 - 계획 문서: `docs/` (01 전략 → 02 자동화 → 03 로드맵/KPI)
+- 실험(블로그)은 `experiments/<id>/pipeline.yaml` 로 정의, 스크립트는 `--exp <id>` 또는 `--all`
 - 스크립트: `scripts/` (weekly_plan → daily_draft → fill_editor → weekly_report)

@@ -6,11 +6,11 @@ from __future__ import annotations
 import json, re, time
 from datetime import date
 import requests
-from src.common import DATA, KeywordCandidate, env, get_logger
+from src.common import data_dir, KeywordCandidate, env, get_logger
 log = get_logger(__name__)
 
 URL = "https://openapi.naver.com/v1/search/blog.json"
-CACHE_DIR = DATA / "keywords" / "cache"
+def cache_dir(): return data_dir() / "keywords" / "cache"
 # 기업·공식 계정으로 보이는 블로그 ID 패턴 (개인 아님으로 판정)
 CORP_PATTERNS = re.compile(r"official|corp|company|_kr$|^kr_|store|shop|brand|edu$|academy|center|group|inc$|lab$", re.I)
 
@@ -54,7 +54,7 @@ def enrich_with_serp(cands: list[KeywordCandidate], dry_run: bool = False, use_c
         for c in cands:
             c.personal_ratio = 0.5
         return cands
-    cp = CACHE_DIR / f"serp-{date.today():%Y-W%V}.json"
+    cp = cache_dir() / f"serp-{date.today():%Y-W%V}.json"
     cache: dict[str, dict] = json.loads(cp.read_text(encoding="utf-8")) if (use_cache and cp.exists()) else {}
     sess = requests.Session()
     hits = 0

@@ -9,9 +9,38 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 CONFIG = ROOT / "config"
+EXPERIMENTS = ROOT / "experiments"
 TEMPLATES = ROOT / "src" / "templates"
 
 load_dotenv(ROOT / ".env")
+
+# ---- 실험(블로그) 컨텍스트 -------------------------------------------------
+# 여러 블로그를 병렬로 굴린다. 실험마다 experiments/<id>/pipeline.yaml (base 설정 위에 덮어씀),
+# data/<id>/ (키워드·초안·리포트), 브라우저 프로필이 분리된다.
+_current_experiment: str | None = None
+
+def set_experiment(name: str | None) -> None:
+    global _current_experiment
+    _current_experiment = name or None
+    if name:
+        os.environ["TORY_EXP"] = name
+
+def current_experiment() -> str | None:
+    return _current_experiment or os.getenv("TORY_EXP") or None
+
+def list_experiments() -> list[str]:
+    return sorted(p.parent.name for p in EXPERIMENTS.glob("*/pipeline.yaml"))
+
+def data_dir() -> Path:
+    exp = current_experiment()
+    d = DATA / exp if exp else DATA
+    return d
+
+def _deep_merge(base: dict, over: dict) -> dict:
+    out = dict(base)
+    for k, v in over.items():
+        out[k] = _deep_merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
 
 def get_logger(name: str) -> logging.Logger:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s [%(name)s] %(message)s")
@@ -27,7 +56,13 @@ def save_yaml(path: Path, data: dict) -> None:
         yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False)
 
 def pipeline_config() -> dict:
-    return load_yaml(CONFIG / "pipeline.yaml")
+    """base 설정(config/pipeline.yaml) 위에 현재 실험 설정을 덮어쓴 결과."""
+    cfg = load_yaml(CONFIG / "pipeline.yaml")
+    exp = current_experiment()
+    if exp:
+        cfg = _deep_merge(cfg, load_yaml(EXPERIMENTS / exp / "pipeline.yaml"))
+        cfg["experiment"] = exp
+    return cfg
 
 def env(key: str, default: str | None = None) -> str | None:
     return os.getenv(key, default)

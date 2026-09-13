@@ -26,7 +26,7 @@ def test_headers_require_env(monkeypatch):
 
 def test_enrich_uses_cache(monkeypatch, tmp_path):
     monkeypatch.setenv("NAVER_CLIENT_ID", "i"); monkeypatch.setenv("NAVER_CLIENT_SECRET", "s")
-    monkeypatch.setattr(api, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(api, "cache_dir", lambda: tmp_path)
     monkeypatch.setattr(api.time, "sleep", lambda *_: None)
     calls = []
     monkeypatch.setattr(api, "search_blog", lambda q, session=None: calls.append(q) or [{"bloggerlink": "https://blog.naver.com/p"}])

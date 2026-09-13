@@ -10,3 +10,4 @@ data/reports/raw/*
 logs/
 .pytest_cache/
 data/keywords/cache/
+data/*/

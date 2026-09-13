@@ -2,6 +2,7 @@
 """사람이 실행: 승인 초안을 네이버 에디터에 채운다. 발행은 사람이 직접."""
 import sys; from pathlib import Path; sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import click
+from src.common import set_experiment
 from pathlib import Path
 from src.common import get_logger
 from src.publisher.editor import fill
@@ -10,8 +11,10 @@ log = get_logger("fill_editor")
 
 @click.command()
 @click.argument("draft", type=click.Path(exists=True, path_type=Path))
+@click.option("--exp", default=None, help="실험 ID")
 @click.option("--dry-run", is_flag=True)
-def main(draft, dry_run):
+def main(draft, exp, dry_run):
+    set_experiment(exp)
     url = fill(draft, dry_run)
     if url:
         log.info("발행 감지: %s", url)

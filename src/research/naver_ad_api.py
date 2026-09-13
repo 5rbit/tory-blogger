@@ -7,14 +7,14 @@ import base64, hashlib, hmac, json, time
 from datetime import date
 from pathlib import Path
 import requests
-from src.common import DATA, KeywordCandidate, env, get_logger, pipeline_config
+from src.common import data_dir, KeywordCandidate, env, get_logger, pipeline_config
 log = get_logger(__name__)
 
 BASE_URL = "https://api.searchad.naver.com"
 URI = "/keywordstool"
 MAX_HINTS = 5                     # hintKeywords 는 호출당 최대 5개
 COMP = {"낮음": 0.3, "중간": 0.6, "높음": 0.9}
-CACHE_DIR = DATA / "keywords" / "cache"
+def cache_dir(): return data_dir() / "keywords" / "cache"
 
 def _signature(ts: str, method: str, uri: str, secret: str) -> str:
     msg = f"{ts}.{method}.{uri}".encode()
@@ -70,7 +70,7 @@ def query_keywordstool(hints: list[str], session: requests.Session | None = None
     return result
 
 def _cache_path(week: str) -> Path:
-    return CACHE_DIR / f"{week}.json"
+    return cache_dir() / f"{week}.json"
 
 def fetch_keyword_stats(seeds: list[str], dry_run: bool = False, use_cache: bool = True) -> list[KeywordCandidate]:
     """시드 키워드로 연관 키워드와 월 검색량을 가져온다. 주 단위 캐시로 호출을 아낀다."""

@@ -39,7 +39,7 @@ def test_query_chunks_hints_by_five(monkeypatch):
 
 def test_fetch_uses_cache_and_filters(monkeypatch, tmp_path):
     monkeypatch.setenv("NAVER_AD_API_KEY", "k"); monkeypatch.setenv("NAVER_AD_SECRET", "s"); monkeypatch.setenv("NAVER_AD_CUSTOMER_ID", "c")
-    monkeypatch.setattr(api, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(api, "cache_dir", lambda: tmp_path)
     calls = []
     monkeypatch.setattr(api, "query_keywordstool", lambda seeds: calls.append(1) or [
         {"relKeyword": "big", "monthlyPcQcCnt": 5000, "monthlyMobileQcCnt": 5000, "compIdx": "중간"},

@@ -26,4 +26,7 @@ def check(markdown: str, title: str) -> list[RuleResult]:
         RuleResult("외부 링크", len(links) <= r["max_external_links"], f"{len(links)}개"),
         RuleResult("해시태그", r["hashtags"][0] <= len(tags) <= r["hashtags"][1], f"{len(tags)}개"),
         RuleResult("제목 길이", len(title) <= r["max_title_len"], f"{len(title)}자"),
+        RuleResult("한줄요약(메이트)", "**한줄요약**" in markdown, "서두 요약 유무"),
+        RuleResult("표(실측)", bool(re.search(r"^\|.*\|\s*$", markdown, flags=re.M)), "Markdown 표 유무"),
+        RuleResult("상품 슬롯(쇼핑커넥트)", len(re.findall(r"\[상품:", markdown)) <= 1, f"{len(re.findall(r'[[]상품:', markdown))}개"),
     ]

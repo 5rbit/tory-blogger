@@ -9,9 +9,10 @@ def review(markdown: str, title: str, dry_run: bool = False) -> tuple[bool, list
     sim = similarity.max_similarity(markdown)
     if sim > cfg["max_similarity"]:
         problems.append(f"유사도 초과 ({sim:.0%})")
-    s = scorer.score(markdown, dry_run)
+    s, reasons = scorer.score(markdown, dry_run)
     if s < cfg["min_score"]:
         problems.append(f"품질 점수 미달 ({s}/10)")
+        problems += reasons
     for p in problems:
         log.warning("검수: %s", p)
     return (not problems, problems)

@@ -16,8 +16,8 @@ content_mix:            # 합계 1.0
   hub: 0.05
 
 models:
-  writer: claude-sonnet-5
-  reviewer: claude-fable-5-1
+  writer: sonnet      # claude -p --model 값. 구독 계정 사용, API 키 불필요
+  reviewer: opus
 
 review:
   min_chars: 1500

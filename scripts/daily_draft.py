@@ -28,9 +28,10 @@ def main(dry_run):
             log.info("승인된 키워드가 없습니다. 종료"); return
     kw = KeywordCandidate(**{k: v for k, v in post.items() if k in KeywordCandidate.__dataclass_fields__})
     max_regen = pipeline_config()["review"]["max_regenerations"]
+    problems = []
     for attempt in range(max_regen + 1):
         log.info("초안 생성 (%d/%d): %s", attempt + 1, max_regen + 1, kw.keyword)
-        md = generate_draft(kw, dry_run)
+        md = generate_draft(kw, dry_run, feedback=problems or None)
         ok, problems = review(md, kw.keyword, dry_run)
         if ok or dry_run:
             break

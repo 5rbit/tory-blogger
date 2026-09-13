@@ -14,7 +14,7 @@
 
 - 플랫폼: 네이버 블로그 1개 (주제 집중)
 - 발행 방식: 초안 생성·검수·에디터 채우기는 자동, **발행 버튼은 사람이 클릭**
-- 글 생성: Claude API (`claude-sonnet-5` 기본, 품질 채점은 `claude-fable-5-1`)
+- 글 생성·채점: 설치된 Claude Code CLI(`claude -p`)를 구독 계정으로 호출. API 키 불필요
 - 키워드 발굴: 네이버 검색광고 API + 네이버 검색 API (공식)
 - 사람 역할: 주 1회 키워드 승인, 매 글 사진 첨부·최종 검토·발행
 
@@ -23,7 +23,7 @@
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
-cp .env.example .env   # 네이버 API 키 입력
+cp .env.example .env   # 네이버 API 키 입력 (Claude는 로그인된 CLI 사용)
 python scripts/weekly_plan.py --dry-run
 python scripts/daily_draft.py --dry-run
 ```

@@ -9,3 +9,4 @@ data/reports/raw/*
 !data/**/.gitkeep
 logs/
 .pytest_cache/
+data/keywords/cache/

@@ -44,6 +44,14 @@ class KeywordCandidate:
     status: str = "pending"    # pending | approved | rejected | drafted | published
     extra: dict = field(default_factory=dict)
 
+    def money_score(self, competition_bonus: float = 1.0, intent_bonus: float = 0.5, intent_words: list[str] | None = None) -> float:
+        """돈 되는 키워드 점수: 검색량 × 개인 블로그 비율 × (1 + 경쟁도 가점) × (1 + 구매 의도 가점).
+        경쟁도가 높다 = 광고주가 많다 = 단가가 높다."""
+        intent = any(w in self.keyword for w in (intent_words or []))
+        return (self.volume * max(self.personal_ratio, 0.05)
+                * (1 + competition_bonus * self.competition)
+                * (1 + (intent_bonus if intent else 0)))
+
     @property
     def score(self) -> float:
-        return self.volume * max(self.personal_ratio, 0.05) / max(self.competition, 0.1)
+        return self.money_score()

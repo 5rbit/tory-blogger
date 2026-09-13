@@ -1,8 +1,9 @@
 # 파이프라인 설정
 topic:
-  main: "AI 도구 활용법"
-  sub: "로봇/자동화 개발"
-  seed_keywords: ["Claude 활용", "ChatGPT 업무 자동화", "AI 노트 앱", "AI 코딩 도구", "ROS 입문", "Rust 로봇"]
+  main: "IT·가전 제품 구매 가이드"
+  sub: "개발자·재택근무 생산성 장비"
+  seed_keywords: ["모니터 추천", "기계식 키보드 추천", "노트북 추천", "모니터암 추천", "웹캠 추천", "USB 허브 추천", "스마트홈", "AI 스피커"]
+  intent_words: ["추천", "후기", "비교", "가격", "단점", "vs"]   # 구매 의도 키워드 가점
 
 schedule:
   posts_per_week: 5
@@ -10,8 +11,8 @@ schedule:
   max_posts_per_day: 1
 
 content_mix:            # 합계 1.0
-  info: 0.5
-  review: 0.3
+  info: 0.3
+  review: 0.5
   issue: 0.15
   hub: 0.05
 
@@ -33,6 +34,9 @@ review:
   max_regenerations: 2
 
 research:
-  min_monthly_volume: 500
+  min_monthly_volume: 1000
+  max_monthly_volume: 10000
   min_personal_blog_ratio: 0.4
+  competition_bonus: 1.0     # 점수 = 검색량 × 개인비율 × (1 + bonus × 경쟁도). 경쟁도 = 광고주 수요 = 단가
+  intent_bonus: 0.5          # 구매 의도 단어 포함 시 가점
   candidates_per_week: 100

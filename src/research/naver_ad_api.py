@@ -92,7 +92,7 @@ def fetch_keyword_stats(seeds: list[str], dry_run: bool = False, use_cache: bool
     seen: set[str] = set()
     filtered = []
     for c in sorted(cands, key=lambda c: c.volume, reverse=True):
-        if c.keyword in seen or c.volume < cfg["min_monthly_volume"]:
+        if c.keyword in seen or not (cfg["min_monthly_volume"] <= c.volume <= cfg.get("max_monthly_volume", 10**9)):
             continue
         seen.add(c.keyword); filtered.append(c)
     log.info("월 검색량 %d 이상 키워드 %d개", cfg["min_monthly_volume"], len(filtered))

@@ -17,7 +17,7 @@ def check(markdown: str, title: str) -> list[RuleResult]:
     photos = re.findall(r"\[사진:", markdown)
     exp = re.findall(r"직접|제 경우|써보니|해보니", markdown)
     links = re.findall(r"https?://", markdown)
-    tags = re.findall(r"(?<!\w)#\S+", markdown)
+    tags = re.findall(r"(?<![\w#])#(?!#)[\w가-힣]+", markdown)
     return [
         RuleResult("글자수", len(body) >= r["min_chars"], f"{len(body)}자"),
         RuleResult("소제목", len(headings) >= r["min_headings"], f"{len(headings)}개"),

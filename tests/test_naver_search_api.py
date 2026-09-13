@@ -20,12 +20,22 @@ def test_analyze():
     assert a["avg_desc_len"] == 17
 
 def test_headers_require_env(monkeypatch):
-    monkeypatch.delenv("NAVER_CLIENT_ID", raising=False)
+    for k in ["NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET", "NAVER_NCP_KEY_ID", "NAVER_NCP_KEY"]:
+        monkeypatch.delenv(k, raising=False)
     with pytest.raises(RuntimeError):
         api._headers()
 
-def test_enrich_uses_cache(monkeypatch, tmp_path):
+def test_hub_preferred_over_legacy(monkeypatch):
     monkeypatch.setenv("NAVER_CLIENT_ID", "i"); monkeypatch.setenv("NAVER_CLIENT_SECRET", "s")
+    monkeypatch.setenv("NAVER_NCP_KEY_ID", "hid"); monkeypatch.setenv("NAVER_NCP_KEY", "hkey")
+    url, h = api._endpoint()
+    assert url == api.HUB_URL and h["X-NCP-APIGW-API-KEY-ID"] == "hid"
+    monkeypatch.delenv("NAVER_NCP_KEY_ID"); monkeypatch.delenv("NAVER_NCP_KEY")
+    url, h = api._endpoint()
+    assert url == api.LEGACY_URL and h["X-Naver-Client-Id"] == "i"
+
+def test_enrich_uses_cache(monkeypatch, tmp_path):
+    monkeypatch.setenv("NAVER_NCP_KEY_ID", "i"); monkeypatch.setenv("NAVER_NCP_KEY", "s")
     monkeypatch.setattr(api, "cache_dir", lambda: tmp_path)
     monkeypatch.setattr(api.time, "sleep", lambda *_: None)
     calls = []
@@ -36,7 +46,7 @@ def test_enrich_uses_cache(monkeypatch, tmp_path):
     assert c[0].personal_ratio == 1.0 and "serp" in c[0].extra
 
 def test_search_blog_error(monkeypatch):
-    monkeypatch.setenv("NAVER_CLIENT_ID", "i"); monkeypatch.setenv("NAVER_CLIENT_SECRET", "s")
+    monkeypatch.setenv("NAVER_NCP_KEY_ID", "i"); monkeypatch.setenv("NAVER_NCP_KEY", "s")
     sess = MagicMock(); sess.get.return_value = MagicMock(status_code=401, text="bad")
     with pytest.raises(RuntimeError):
         api.search_blog("q", session=sess)

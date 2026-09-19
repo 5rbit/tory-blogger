@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""진입로·진출로 대중교통 표를 만들어 초안의 '## 주의사항' 앞에 넣는다 (초안 없이 출력만도 가능).
+"""진입로·진출로 대중교통 표를 만들어 초안의 '## ⚠️ 주의사항' 앞에 넣는다 (초안 없이 출력만도 가능).
 사용: python scripts/transit_table.py --exp hiker --entry "북한산 우이동" --exit "북한산 구기동" [초안.md]
 """
 import sys, re; from pathlib import Path; sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -22,8 +22,8 @@ def main(draft, exp, entry, exit_, weekday, dry_run):
         print(block)
     if draft and not dry_run:
         text = draft.read_text(encoding="utf-8")
-        pat = re.compile(r"## 대중교통.*?(?=\n## |\Z)", re.S)
-        text = pat.sub(block, text) if pat.search(text) else (text.replace("## 주의사항", block + "\n\n## 주의사항", 1) if "## 주의사항" in text else text.rstrip() + "\n\n" + block + "\n")
+        pat = re.compile(r"## (?:🚌 )?대중교통.*?(?=\n## |\Z)", re.S)
+        text = pat.sub(block, text) if pat.search(text) else (text.replace("## ⚠️ 주의사항", block + "\n\n## 주의사항", 1) if "## ⚠️ 주의사항" in text else text.rstrip() + "\n\n" + block + "\n")
         draft.write_text(text, encoding="utf-8"); log.info("대중교통 블록 반영: %s", draft)
 
 if __name__ == "__main__":

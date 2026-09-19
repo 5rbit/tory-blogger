@@ -6,6 +6,7 @@ import math
 from datetime import date, datetime, timedelta
 import requests
 from src.common import CONFIG, env, get_logger, load_yaml
+from src.emoji import E, weather_emoji, foliage_emoji
 log = get_logger(__name__)
 
 KMA_URL = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
@@ -60,7 +61,7 @@ def forecast(lat: float, lon: float, target: date, dry_run: bool = False) -> dic
         if v:
             slots.append({"time": t[:2] + "시", "sky": PTY.get(v.get("PTY", "0")) or SKY.get(v.get("SKY", ""), ""),
                           "temp": v.get("TMP"), "pop": v.get("POP"), "wind": v.get("WSD")})
-    summary = ", ".join(f"{s['time']} {s['sky']} {s['temp']}℃ 강수 {s['pop']}%" for s in slots) or "(해당 날짜 예보 없음: 3일 이내만 조회 가능)"
+    summary = " · ".join(f"{s['time']} {weather_emoji(s['sky'])}{s['sky']} {s['temp']}℃ 💧{s['pop']}%" for s in slots) or "(해당 날짜 예보 없음: 3일 이내만 조회 가능)"
     return {"date": target.isoformat(), "slots": slots, "summary": summary, "grid": (nx, ny)}
 
 # ---- 단풍 -----------------------------------------------------------------
@@ -88,20 +89,20 @@ def closures_for(park: str, on: date) -> tuple[list[dict], list[str]]:
 # ---- 초안에 넣을 블록 --------------------------------------------------------
 def conditions_block(trailhead: str, mountain: str, target: date, dry_run: bool = False) -> str:
     th = load_yaml(CONFIG / "trailheads.yaml").get(trailhead)
-    lines = [f"## 이번 주말 현황 ({target:%m/%d} 기준)"]
+    lines = [f"## {E['weather']} 이번 주말 현황 ({target:%m/%d} 기준)"]
     if th:
         fc = forecast(th["lat"], th["lon"], target, dry_run)
-        lines.append(f"- 날씨({trailhead}): {fc['summary']}")
+        lines.append(f"- {E['weather']} 날씨({trailhead}): {fc['summary']}")
         park = th.get("park") or mountain
     else:
-        lines.append(f"- 날씨: (들머리 좌표 미등록: config/trailheads.yaml 에 '{trailhead}' 추가)")
+        lines.append(f"- {E['weather']} 날씨: (들머리 좌표 미등록: config/trailheads.yaml 에 '{trailhead}' 추가)")
         park = mountain
     fs = foliage_status(mountain, target)
     if fs:
-        lines.append(f"- 단풍: {fs}")
+        lines.append(f"- {foliage_emoji(fs)} 단풍: {fs}")
     hits, urls = closures_for(park, target)
     if hits:
-        lines += [f"- ⚠️ 통제: {c['trail']} ({c['reason']}, {c['until']} 까지)" for c in hits]
+        lines += [f"- {E['closed']} 통제: {c['trail']} ({c['reason']}, {c['until']} 까지)" for c in hits]
     else:
-        lines.append("- 통제: 기록된 통제 없음. 발행 전 확인 → " + (urls[0] if urls else ""))
+        lines.append(f"- {E['ok']} 통제: 기록된 통제 없음. 발행 전 확인 → " + (urls[0] if urls else ""))
     return "\n".join(lines)

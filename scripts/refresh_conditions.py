@@ -24,11 +24,11 @@ def main(draft, exp, trailhead, mountain, target, dry_run):
     t = date.fromisoformat(target) if target else next_saturday(date.today())
     block = conditions_block(trailhead, mountain, t, dry_run)
     text = draft.read_text(encoding="utf-8")
-    pat = re.compile(r"## 이번 주말 현황.*?(?=\n## |\n#[^#]|\Z)", re.S)
+    pat = re.compile(r"## (?:🌤️ )?이번 주말 현황.*?(?=\n## |\n#[^#]|\Z)", re.S)
     if pat.search(text):
         text = pat.sub(block, text); log.info("현황 블록 갱신")
-    elif "## 주의사항" in text:
-        text = text.replace("## 주의사항", block + "\n\n## 주의사항", 1); log.info("현황 블록 삽입 (주의사항 앞)")
+    elif "## ⚠️ 주의사항" in text:
+        text = text.replace("## ⚠️ 주의사항", block + "\n\n## 주의사항", 1); log.info("현황 블록 삽입 (주의사항 앞)")
     else:
         text = text.rstrip() + "\n\n" + block + "\n"; log.info("현황 블록 추가 (끝)")
     if dry_run:

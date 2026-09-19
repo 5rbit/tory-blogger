@@ -8,7 +8,7 @@ def test_sample_course_lengths_and_timeline():
     c = cv.sample_course()
     assert abs(c.length_km - 3.8) < 0.01 and c.up_min == 120
     t = cv.timeline_table(c, "09:00", lunch_min=30)
-    assert "| 09:00 |" in t and "| 11:00 | 백운대" in t and "(하산)" in t
+    assert "| 09:00 |" in t and "| 11:00 | ⛰️ 백운대" in t and "(하산)" in t and "🥾" in t
 
 def test_scores_in_range():
     sc = cv.difficulty_scores(cv.sample_course(), access=5, view=2)

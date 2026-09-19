@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from datetime import date
 import requests
 from src.common import CONFIG, DATA, env, get_logger, load_yaml
+from src.emoji import E
 log = get_logger(__name__)
 
 STN = "http://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList"
@@ -121,12 +122,13 @@ def to_markdown(entry: str, exit_: str | None, dry_run: bool = False, on_weekend
         for r in sorted(rows, key=lambda r: (r.source != "수동", r.first)):
             iv = (r.interval_sat or r.interval_sun or r.interval) if on_weekend else r.interval
             note = f"{r.origin}→{r.dest}" if r.origin and r.dest else r.dest
-            lines.append(f"| {r.stop} | {r.route_no} ({r.route_type}) | {r.hhmm(r.first)} | {r.hhmm(r.last)} | {iv}분 | {note} |")
+            icon = E["subway"] if "지하철" in r.route_type or "선" in r.route_no else E["bus"]
+            lines.append(f"| {r.stop} | {icon} {r.route_no} ({r.route_type}) | 🌅 {r.hhmm(r.first)} | 🌙 {r.hhmm(r.last)} | {iv}분 | {note} |")
         if len(rows) == 0:
             lines.append("| (정보 없음 — 수동 확인) | | | | | |")
         return "\n".join(lines)
-    out = ["## 대중교통", table(f"진입로 · {entry}", transit_for(entry, dry_run))]
+    out = [f"## {E['transit']} 대중교통", table(f"{E['start']} 진입로 · {entry}", transit_for(entry, dry_run))]
     if exit_ and exit_ != entry:
-        out.append(table(f"진출로 · {exit_} (막차 기준으로 하산 시각을 잡으세요)", transit_for(exit_, dry_run)))
+        out.append(table(f"{E['finish']} 진출로 · {exit_} ({E['warning']} 막차 기준으로 하산 시각을 잡으세요)", transit_for(exit_, dry_run)))
     out.append("*출처: 국토교통부 TAGO · 서울특별시 버스 정보 · 시간표는 변경될 수 있으니 출발 전 확인*")
     return "\n\n".join(out)

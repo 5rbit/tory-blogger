@@ -27,6 +27,6 @@ def restaurants_near(trailhead: str, keyword: str = "맛집", display: int = 5, 
     return items
 
 def to_markdown_table(items: list[dict]) -> str:
-    rows = ["| 식당 | 분류 | 주소 | 직접 감 |", "|---|---|---|---|"]
-    rows += [f"| {i['title']} | {i.get('category','')} | {i.get('roadAddress','')} | X |" for i in items]
+    rows = ["| 🍲 식당 | 분류 | 주소 | 직접 감 |", "|---|---|---|---|"]
+    rows += [f"| {i['title']} | {i.get('category','')} | {i.get('roadAddress','')} | ❌ |" for i in items]
     return "\n".join(rows)

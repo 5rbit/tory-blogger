@@ -11,3 +11,5 @@ logs/
 .pytest_cache/
 data/keywords/cache/
 data/*/
+data/trails/*
+!data/trails/.gitkeep

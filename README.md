@@ -30,12 +30,14 @@ pip install -e .
 cp .env.example .env   # 네이버 API 키 입력 (Claude는 로그인된 CLI 사용)
 python scripts/weekly_plan.py --exp hiker --dry-run
 python scripts/daily_draft.py --exp hiker --dry-run
+python scripts/course_assets.py --exp hiker --mountain 북한산 --sample --dry-run
 python scripts/attach_photos.py --exp hiker <초안.md> --keyword 북한산 --dry-run
+python scripts/transit_table.py --exp hiker --entry "북한산 우이동" --dry-run
 python scripts/refresh_conditions.py --exp hiker <초안.md> --trailhead "북한산 우이동" --mountain 북한산 --dry-run
 ```
 
 ## 파이프라인 한눈에 보기
 
 ```
-research → planner → writer → reviewer → [사람 승인] → attach_photos → refresh_conditions → publisher(에디터 채움) → [사람 발행] → distributor → analytics
+research → planner → writer → reviewer → [사람 승인] → course_assets → attach_photos → transit_table → refresh_conditions → publisher(에디터 채움) → [사람 발행] → distributor → analytics
 ```

@@ -14,6 +14,8 @@ dependencies = [
     "feedparser>=6.0.11",
     "click>=8.1.0",
     "python-dotenv>=1.0.0",
+    "matplotlib>=3.9",
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]

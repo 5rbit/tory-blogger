@@ -3,7 +3,7 @@
   경유노선: BusRouteInfoInqireService/getSttnThrghRouteList (cityCode, nodeid)
   노선정보: BusRouteInfoInqireService/getRouteInfoIem (cityCode, routeId) → 첫차·막차·배차(평일/토/일)
 지하철·시외버스 등 API 밖 정보는 config/trailheads.yaml 의 transit_manual 에 사람이 적는다.
-서울 시내버스는 TAGO 범위 밖일 수 있어 서울 열린데이터로 보완 예정 (SEOUL_OPENAPI_KEY).
+서울 권역(좌표 자동 판별 또는 city: seoul)은 seoul_bus.py 의 서울시 정류소·노선 API 를 쓴다.
 """
 from __future__ import annotations
 import json, time
@@ -96,10 +96,23 @@ def manual_routes(trailhead: str) -> list[RouteInfo]:
             for m in th.get("transit_manual", [])]
 
 def transit_for(trailhead: str, dry_run: bool = False) -> list[RouteInfo]:
+    """수동 항목 + (서울 권역이면 서울버스 API, 아니면 TAGO). 서울은 TAGO 에 없으므로 좌표로 자동 분기. 주 단위 캐시."""
     th = load_yaml(CONFIG / "trailheads.yaml").get(trailhead)
     if not th:
         log.warning("들머리 좌표 없음: %s", trailhead); return manual_routes(trailhead)
-    return manual_routes(trailhead) + routes_near(th["lat"], th["lon"], dry_run=dry_run)
+    lat, lon = th["lat"], th["lon"]
+    from src.research import seoul_bus
+    use_seoul = th.get("city") == "seoul" or (th.get("city") is None and seoul_bus.in_seoul(lat, lon))
+    if dry_run or not env("DATA_GO_KR_KEY"):
+        return manual_routes(trailhead) + routes_near(lat, lon, dry_run=True)
+    if use_seoul:
+        key = f"seoul:{lat:.4f},{lon:.4f}:{date.today():%Y-W%V}"
+        cache = json.loads(_CACHE.read_text()) if _CACHE.exists() else {}
+        if key not in cache:
+            cache[key] = [r.__dict__ for r in seoul_bus.routes_near(lat, lon)]
+            _CACHE.parent.mkdir(parents=True, exist_ok=True); _CACHE.write_text(json.dumps(cache, ensure_ascii=False))
+        return manual_routes(trailhead) + [RouteInfo(**r) for r in cache[key]]
+    return manual_routes(trailhead) + routes_near(lat, lon, dry_run=dry_run)
 
 def to_markdown(entry: str, exit_: str | None, dry_run: bool = False, on_weekend: bool = True) -> str:
     def table(title: str, rows: list[RouteInfo]) -> str:
@@ -115,5 +128,5 @@ def to_markdown(entry: str, exit_: str | None, dry_run: bool = False, on_weekend
     out = ["## 대중교통", table(f"진입로 · {entry}", transit_for(entry, dry_run))]
     if exit_ and exit_ != entry:
         out.append(table(f"진출로 · {exit_} (막차 기준으로 하산 시각을 잡으세요)", transit_for(exit_, dry_run)))
-    out.append("*출처: 국토교통부 TAGO 버스 정보 · 시간표는 변경될 수 있으니 출발 전 확인*")
+    out.append("*출처: 국토교통부 TAGO · 서울특별시 버스 정보 · 시간표는 변경될 수 있으니 출발 전 확인*")
     return "\n\n".join(out)

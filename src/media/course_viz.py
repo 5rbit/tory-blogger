@@ -290,10 +290,14 @@ def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str
 def slug(s: str) -> str:
     return re.sub(r"[^\w가-힣]+", "_", s).strip("_")
 
-def build_all(course: Course, out_dir: Path, start: str = "09:00", access: int = 3, view: int = 4, season_note: str = "", dry_run: bool = False) -> dict:
+def build_all(course: Course, out_dir: Path, start: str = "09:00", access: int = 3, view: int = 4, season_note: str = "", dry_run: bool = False,
+              preset: str = "standard", layers: list[str] | None = None, on=None, lat: float | None = None, lon: float | None = None) -> dict:
+    from src.media.profile import render
     ensure_elevation(course, dry_run)
     out_dir.mkdir(parents=True, exist_ok=True)
-    res = {"profile": elevation_profile(course, out_dir / "profile.png"),
+    if lat is None and course.segments:
+        lon, lat = course.segments[0].coords[0]
+    res = {"profile": render(course, out_dir / "profile.png", layers, preset, start, on, lat, lon),
            "radar": radar_chart({course.mountain: difficulty_scores(course, access, view)}, out_dir / "radar.png", f"{course.mountain} 난이도"),
            "card": summary_card(course, out_dir / "card.png", season_note=season_note),
            "timeline": timeline_table(course, start)}

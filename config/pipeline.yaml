@@ -10,11 +10,11 @@ schedule:
   publish_days: ["tue", "wed", "thu", "fri", "sat"]
   max_posts_per_day: 1
 
-content_mix:            # 합계 1.0
-  info: 0.3
-  review: 0.5
-  issue: 0.15
-  hub: 0.05
+content_mix:            # 합계 1.0 — 실험 설정이 덮어씀
+  course: 0.6
+  curation: 0.2
+  gear: 0.15
+  nomad: 0.05
 
 models:
   writer: sonnet      # claude -p --model 값. 구독 계정 사용, API 키 불필요

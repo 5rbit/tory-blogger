@@ -1,0 +1,21 @@
+# 등산 애호가 디지털 노마드 블로거
+blog_id: ""
+persona: "주 2~3회 산에 가며 산 아래 카페에서 일하는 디지털 노마드. 직접 걸은 코스만 쓴다"
+target: "주말 등산 계획을 세우는 20~50대, 초보~중급"
+topic:
+  main: "이맘때 가기 좋은 등산 코스"
+  sub: "등산 용품 실사용 후기, 하산 후 맛집"
+  seed_keywords: ["등산코스", "단풍 명산", "가을 등산", "수도권 등산", "북한산 등산코스", "설악산 단풍", "지리산 등산", "초보 등산", "등산화 추천", "등산 스틱 추천"]
+  intent_words: ["코스", "추천", "후기", "시기", "난이도", "주차", "맛집"]
+content_mix: {course: 0.6, curation: 0.2, gear: 0.15, nomad: 0.05}
+schedule: {posts_per_week: 3, publish_days: ["tue", "thu", "sat"]}
+review:
+  min_photo_slots: 5
+  max_external_links: 2      # 네이버 지도 링크 1 + 상품 1
+regions:
+  - {name: "수도권 근교", type: "당일", weight: 0.6}
+  - {name: "지방 명산", type: "1박", weight: 0.4}
+gear_position: "bottom"      # bottom | inline  (실험 변수)
+lead_weeks_before_peak: 3    # 검색 피크 3주 전 발행
+revenue_focus: ["쇼핑커넥트(용품)", "애드포스트(계절 트래픽)", "메이트(코스 표 인용)", "체험단(아웃도어·지역)"]
+cost_per_month: 100000       # 교통·입장·식비 일부

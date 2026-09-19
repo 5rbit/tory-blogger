@@ -20,3 +20,7 @@ def test_draw_row_and_levels():
 
 def test_tokens_loaded():
     t = ds.tokens(); assert t["color"]["bg"].startswith("#") and t["font"]["title"] > t["font"]["caption"]
+
+def test_badge_and_pin_shapes():
+    b = ds.badge("pin", 26, "#000"); assert b.size == (26, 26) and b.getbbox()
+    p = ds.pin("mountain", 30, "#C0392B"); assert p.height == 30 and p.width < p.height and p.getbbox()

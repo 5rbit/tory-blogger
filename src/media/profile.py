@@ -7,7 +7,7 @@ import math
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from src.common import CONFIG, load_yaml, get_logger
-from src.media.design import tokens, icon, add_title_band, draw_row, font
+from src.media.design import tokens, icon, badge, pin, add_title_band, draw_row, font
 log = get_logger(__name__)
 
 PRESETS = {
@@ -180,7 +180,7 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
     marks = [(0, "flag", course.segments[0].name.split("→")[0].strip())]
     for k, (i0, i1, s) in enumerate(seg_bounds):
         marks.append((i1, "mountain" if k == len(seg_bounds) - 1 else "pin", s.name.split("→")[-1].strip()))
-    fig.canvas.draw(); px_marks = []
+    fig.canvas.draw(); px_marks = []; mini_px = []
     for i, ic, label in marks:
         px, py = ax.transData.transform((x[i], y[i])); px_marks.append((px, py, ic, label))
         if "markers" not in L:
@@ -197,9 +197,8 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
         for other in (getattr(course, "context_lines", None) or []):          # 같은 산의 다른 구간
             ins.plot([q[0] for q in other], [q[1] for q in other], color="#9FB3A3", lw=0.8, alpha=0.7)
         ins.plot(lons, lats, color=C["chart_line"], lw=2)
-        ins.plot(lons[0], lats[0], "s", color="#2980B9", ms=5); ins.plot(lons[-1], lats[-1], "^", color=C["chart_point"], ms=6)
-        ins.annotate(marks[0][2], (lons[0], lats[0]), textcoords="offset points", xytext=(4, -9), fontsize=6, color="#2980B9")
-        ins.annotate(marks[-1][2], (lons[-1], lats[-1]), textcoords="offset points", xytext=(4, 3), fontsize=6, color=C["chart_point"])
+        ins.annotate(marks[0][2], (lons[0], lats[0]), textcoords="offset points", xytext=(0, -11), fontsize=6, color="#2980B9", ha="center")
+        ins.annotate(marks[-1][2], (lons[-1], lats[-1]), textcoords="offset points", xytext=(0, -11), fontsize=6, color=C["chart_point"], ha="center")
         aspect = 1 / math.cos(math.radians(sum(lats) / len(lats))); ins.set_aspect(aspect)
         ins.margins(0.25); ins.set_xticks([]); ins.set_yticks([])
         ins.annotate("N", xy=(0.92, 0.80), xytext=(0.92, 0.62), xycoords="axes fraction", textcoords="axes fraction", ha="center", fontsize=7,
@@ -209,16 +208,21 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
         bx = x0 + (x1 - x0) * 0.06; by = yl0 + (yl1 - yl0) * 0.08
         ins.plot([bx, bx + deg], [by, by], color="#333", lw=2); ins.text(bx + deg / 2, by + (yl1 - yl0) * 0.03, "500 m", ha="center", fontsize=6)
         for sp in ins.spines.values(): sp.set_alpha(0.3)
+        fig.canvas.draw()
+        mini_px = [(*ins.transData.transform((lons[0], lats[0])), "flag", "#2980B9"), (*ins.transData.transform((lons[-1], lats[-1])), "mountain", C["chart_point"])]
 
     fig.savefig(out); h_px = fig.get_size_inches()[1] * fig.dpi; plt.close(fig)
 
+    im = Image.open(out).convert("RGBA")
     if "markers" in L:
-        im = Image.open(out).convert("RGBA"); sz = 22
+        sz = 26
         for px, py, ic, _ in px_marks:
-            ii = icon(ic, sz, C["chart_line"] if ic != "mountain" else C["chart_point"])
-            bg = Image.new("RGBA", (sz + 6, sz + 6), (255, 255, 255, 230)); im.paste(bg, (int(px - sz / 2 - 3), int(h_px - py - sz / 2 - 3)), bg)
-            im.paste(ii, (int(px - sz / 2), int(h_px - py - sz / 2)), ii)
-        im.convert("RGB").save(out)
+            fg = C["chart_point"] if ic == "mountain" else ("#2980B9" if ic == "flag" else C["chart_line"])
+            b = badge(ic, sz, fg); im.paste(b, (int(px - sz / 2), int(h_px - py - sz / 2)), b)
+    if "minimap" in L and mini_px:
+        for (px, py, ic, fg) in mini_px:
+            pn = pin(ic, 30, fg); im.paste(pn, (int(px - pn.width / 2), int(h_px - py - pn.height)), pn)   # 꼭짓점이 위치
+    im.convert("RGB").save(out)
 
     gain = float(np.sum(np.clip(np.diff(y), 0, None))); loss = gain if "roundtrip" in L else float(abs(np.sum(np.clip(np.diff(y), None, 0))))
     add_title_band(out, [("icon", "mountain"), course.mountain, "·", ("icon", "trending_up"), "고도 프로파일"])

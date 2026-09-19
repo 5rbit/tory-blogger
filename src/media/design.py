@@ -60,6 +60,26 @@ def icon(name: str, size: int, color: str, stroke: int | None = None) -> Image.I
             d.ellipse(box, outline=None if kind == "D" else color, fill=color if kind == "D" else None, width=w)
     return img.resize((size, size), Image.LANCZOS)
 
+def badge(name: str, size: int, fg: str, bg: str = "#FFFFFF", ring: str | None = None) -> Image.Image:
+    """둥근 배지 안에 아이콘 (지도·그래프 마커용). ring 색을 주면 테두리."""
+    ss = 4; S = size * ss
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
+    d.ellipse([0, 0, S - 1, S - 1], fill=bg, outline=ring or fg, width=max(2, S // 24))
+    ic = icon(name, int(size * 0.62), fg)
+    out = img.resize((size, size), Image.LANCZOS); off = (size - ic.width) // 2
+    out.paste(ic, (off, off), ic); return out
+
+def pin(name: str, size: int, fg: str, bg: str = "#FFFFFF") -> Image.Image:
+    """물방울 핀 (아래 꼭짓점이 위치) + 안쪽 아이콘. 높이 = size, 폭 = size*0.72."""
+    ss = 4; W, H = int(size * 0.72) * ss, size * ss; r = W // 2
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
+    d.ellipse([0, 0, W - 1, W - 1], fill=fg)
+    d.polygon([(int(W * 0.12), int(r * 1.45)), (int(W * 0.88), int(r * 1.45)), (r, H - 1)], fill=fg)
+    d.ellipse([int(W * 0.14), int(W * 0.14), int(W * 0.86), int(W * 0.86)], fill=bg)
+    out = img.resize((W // ss, H // ss), Image.LANCZOS)
+    ic = icon(name, int((W // ss) * 0.48), fg); out.paste(ic, ((W // ss - ic.width) // 2, int((W // ss) * 0.5 - ic.height / 2)), ic)
+    return out
+
 def cap_height(f) -> tuple[int, int]:
     """(글자 상단 오프셋, 캡 높이) — '가' 기준."""
     l, t, r, b = f.getbbox("가"); return t, b - t

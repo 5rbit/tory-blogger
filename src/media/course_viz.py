@@ -13,6 +13,7 @@ from pathlib import Path
 import requests
 from src.common import CONFIG, data_dir, DATA, get_logger, load_yaml
 from src.emoji import E, difficulty_emoji, boots
+from src.media.emoji_text import EMOJI_RE
 log = get_logger(__name__)
 
 FIELD_MAP = {  # 산림청 등산로 SHP 속성명 → 내부 이름 (다른 출처는 config/trail_fields.yaml 로 덮어쓸 수 있음)
@@ -202,15 +203,15 @@ def elevation_profile(course: Course, out: Path, title: str | None = None) -> Pa
         ax.annotate(name, (x[i], elev[i]), textcoords="offset points", xytext=(0, 10), ha="center", fontsize=9)
         ax.plot(x[i], elev[i], "o", color="#c0392b", ms=5)
     gain = sum(max(0, elev[i + 1] - elev[i]) for i in range(len(elev) - 1))
-    ax.set_title(title or f"{course.mountain} 고도 프로파일 — {x[-1]:.1f} km, 누적 상승 {gain:.0f} m", fontsize=12)
     ax.set_xlabel("거리 (km)"); ax.set_ylabel("고도 (m)"); ax.grid(alpha=0.3)
     fig.tight_layout(); out.parent.mkdir(parents=True, exist_ok=True); fig.savefig(out); plt.close(fig)
-    return out
+    from src.media.emoji_text import add_title_band
+    return add_title_band(out, title or f"⛰️ {course.mountain} · 📈 고도 프로파일 · 📏 {x[-1]:.1f} km · 누적 상승 {gain:.0f} m")
 
 # ---- 4. 구간 타임라인 표 ---------------------------------------------------------------
 def timeline_table(course: Course, start: str = "09:00", lunch_min: int = 30) -> str:
     t = datetime.strptime(start, "%H:%M"); km = 0.0
-    rows = [f"| {E['time']} 시각 | 지점 | {E['distance']} 누적 | 구간 소요 | 난이도 |", "|---|---|---|---|---|",
+    rows = [f"| {E['time']} 시각 | 지점 | {E['distance']} 누적 | 구간 소요 | 💪 난이도 |", "|---|---|---|---|---|",
             f"| {t:%H:%M} | {E['start']} {course.segments[0].name.split('→')[0].strip()} (출발) | 0.0 km | - | - |"]
     last = len(course.segments) - 1
     for i, s in enumerate(course.segments):
@@ -226,7 +227,7 @@ def timeline_table(course: Course, start: str = "09:00", lunch_min: int = 30) ->
 
 # ---- 5. 난이도 레이더 -----------------------------------------------------------------
 AXES = ["거리", "고도차", "경사", "기술", "접근성", "조망"]
-TECH = {"쉬움": 1, "하": 1, "보통": 3, "중": 3, "어려움": 5, "상": 5, "매우어려움": 5}
+from src.emoji import _LABEL_TO_LEVEL as TECH
 
 def difficulty_scores(course: Course, access: int = 3, view: int = 4) -> dict[str, int]:
     """1~5 점수. 거리/고도차/경사/기술(구간 난이도 최댓값)은 데이터로, 접근성·조망은 사람이 준다."""
@@ -249,9 +250,10 @@ def radar_chart(scores: dict[str, dict[str, int]], out: Path, title: str = "난�
         vals = [sc[a] for a in AXES] + [sc[AXES[0]]]
         ax.plot(ang, vals, color=color, lw=2, label=name); ax.fill(ang, vals, color=color, alpha=0.15)
     ax.set_xticks(ang[:-1]); ax.set_xticklabels(AXES, fontsize=11); ax.set_ylim(0, 5); ax.set_yticks([1, 2, 3, 4, 5])
-    ax.set_title(title, pad=18, fontsize=13); ax.legend(loc="lower right", bbox_to_anchor=(1.15, -0.1), fontsize=9)
+    ax.legend(loc="lower right", bbox_to_anchor=(1.15, -0.1), fontsize=9)
     fig.tight_layout(); out.parent.mkdir(parents=True, exist_ok=True); fig.savefig(out); plt.close(fig)
-    return out
+    from src.media.emoji_text import add_title_band
+    return add_title_band(out, title if EMOJI_RE.search(title) else f"🥾 {title}")
 
 # ---- 6. 요약 카드 --------------------------------------------------------------------
 def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str = "", size: int = 1080) -> Path:
@@ -262,47 +264,27 @@ def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str
             if Path(p).exists():
                 return ImageFont.truetype(p, sz)
         return ImageFont.load_default()
-    def emoji_img(text: str, height: int):
-        """컬러 이모지를 별도 이미지로 그려 붙인다 (Apple Color Emoji 는 160px 비트맵만 있음)."""
-        for p in ["/System/Library/Fonts/Apple Color Emoji.ttc", "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"]:
-            if Path(p).exists():
-                try:
-                    f = ImageFont.truetype(p, 160 if "Apple" in p else 109)
-                    tmp = Image.new("RGBA", (int(len(text) * 200), 200), (0, 0, 0, 0))
-                    ImageDraw.Draw(tmp).text((0, 0), text, font=f, embedded_color=True)
-                    bbox = tmp.getbbox()
-                    if bbox:
-                        tmp = tmp.crop(bbox); r = height / tmp.height
-                        return tmp.resize((max(1, int(tmp.width * r)), height), Image.LANCZOS)
-                except Exception:
-                    pass
-        return None
+    from src.media.emoji_text import emoji_image as emoji_img
+    from src.media.emoji_text import draw_mixed
     img = Image.new("RGB", (size, size), "#1f3d2b"); d = ImageDraw.Draw(img)
     d.rectangle([0, 0, size, 14], fill="#e8b04b")
     elev = [e for s in course.segments for e in s.elev]
     gain = f"{max(elev) - min(elev):.0f} m" if elev else "-"
-    d.text((70, 90), course.mountain, font=font(92), fill="white")
+    draw_mixed(img, (70, 90), f"⛰️ {course.mountain}", 92, "white")
     d.text((70, 210), subtitle or " → ".join(s.name.split("→")[0].strip() for s in course.segments) + " → " + course.segments[-1].name.split("→")[-1].strip(), font=font(40), fill="#d9e4d5")
-    from src.emoji import _LABEL_TO_LEVEL, DIFFICULTY
+    from src.emoji import _LABEL_TO_LEVEL, LEVEL_NAME, DIFFICULTY_LABEL
     lvl = max((_LABEL_TO_LEVEL.get(s.difficulty.replace(" ", ""), 0) for s in course.segments), default=0) or 3
-    stats = [(E["distance"], "거리(왕복)", f"{course.length_km * 2:.1f} km", None), (E["time"], "소요(상행)", f"{course.up_min // 60}시간 {course.up_min % 60}분", None),
-             (E["elevation"], "고도차", gain, None), (E["course"], "난이도", DIFFICULTY[lvl].split(" ", 1)[1], boots(lvl))]
+    stats = [(f"{E['distance']} 거리(왕복)", f"{course.length_km * 2:.1f} km"), (f"{E['time']} 소요(상행)", f"{course.up_min // 60}시간 {course.up_min % 60}분"),
+             (f"{E['elevation']} 고도차", gain), (DIFFICULTY_LABEL, f"{LEVEL_NAME[lvl]} {boots(lvl)}")]
     y = 360
-    for icon, label, val, emo in stats:
+    for label, val in stats:
         d.rounded_rectangle([70, y, size - 70, y + 120], radius=18, fill="#2f5d3a")
-        ic = emoji_img(icon, 44)
-        if ic: img.paste(ic, (100, y + 38), ic)
-        d.text((160, y + 30), label, font=font(34), fill="#bfd3c1")
-        if emo and (ei := emoji_img(emo, 48)):
-            d.text((size - 110 - ei.width - 16, y + 32), val, font=font(40), fill="white", anchor="ra")
-            img.paste(ei, (size - 100 - ei.width, y + 36), ei)
-        else:
-            d.text((size - 100, y + 22), val, font=font(52), fill="white", anchor="ra")
+        draw_mixed(img, (100, y + 38), label, 34, "#bfd3c1")
+        tmp = Image.new("RGBA", (size, 80), (0, 0, 0, 0)); w = draw_mixed(tmp, (0, 0), val, 46, "white")
+        img.paste(tmp.crop((0, 0, max(w, 1), 80)), (size - 100 - w, y + 30), tmp.crop((0, 0, max(w, 1), 80)))
         y += 140
     if season_note:
-        se = emoji_img("🍁", 44)
-        if se: img.paste(se, (70, y + 24), se)
-        d.text((70 + (se.width + 14 if se else 0), y + 20), season_note, font=font(38), fill="#e8b04b")
+        draw_mixed(img, (70, y + 20), f"🍁 {season_note}", 38, "#e8b04b")
     d.text((70, size - 80), "코스 데이터: 산림청 등산로정보 · 자세한 코스는 본문에서", font=font(28), fill="#9fb3a3")
     out.parent.mkdir(parents=True, exist_ok=True); img.save(out); return out
 
@@ -314,7 +296,7 @@ def build_all(course: Course, out_dir: Path, start: str = "09:00", access: int =
     ensure_elevation(course, dry_run)
     out_dir.mkdir(parents=True, exist_ok=True)
     res = {"profile": elevation_profile(course, out_dir / "profile.png"),
-           "radar": radar_chart({course.mountain: difficulty_scores(course, access, view)}, out_dir / "radar.png", f"{course.mountain} 난이도"),
+           "radar": radar_chart({course.mountain: difficulty_scores(course, access, view)}, out_dir / "radar.png", f"⛰️ {course.mountain} · 💪 난이도"),
            "card": summary_card(course, out_dir / "card.png", season_note=season_note),
            "timeline": timeline_table(course, start)}
     (out_dir / "timeline.md").write_text(res["timeline"], encoding="utf-8")

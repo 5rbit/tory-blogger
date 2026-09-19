@@ -13,3 +13,4 @@ data/keywords/cache/
 data/*/
 data/trails/*
 !data/trails/.gitkeep
+data/*/tracker.xlsx

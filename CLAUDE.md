@@ -10,4 +10,4 @@
 - 완전 자동 발행, 대량 발행, 복붙 글은 금지 (검색 누락·계정 제재 위험)
 - 계획 문서: `docs/` (01 전략 → 02 자동화 → 03 로드맵/KPI)
 - 실험(블로그)은 `experiments/<id>/pipeline.yaml` 로 정의, 스크립트는 `--exp <id>` 또는 `--all`
-- 스크립트: `scripts/` (weekly_plan → daily_draft → course_assets → attach_photos → transit_table → refresh_conditions → fill_editor → weekly_report)
+- 스크립트: `scripts/` (weekly_plan → daily_draft → course_assets → attach_photos → transit_table → refresh_conditions → fill_editor → weekly_report, export_excel 로 엑셀 정리·승인)

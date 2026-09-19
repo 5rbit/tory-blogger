@@ -13,7 +13,6 @@ from pathlib import Path
 import requests
 from src.common import CONFIG, data_dir, DATA, get_logger, load_yaml
 from src.emoji import E, difficulty_emoji, boots
-from src.media.emoji_text import EMOJI_RE
 log = get_logger(__name__)
 
 FIELD_MAP = {  # 산림청 등산로 SHP 속성명 → 내부 이름 (다른 출처는 config/trail_fields.yaml 로 덮어쓸 수 있음)
@@ -197,16 +196,18 @@ def elevation_profile(course: Course, out: Path, title: str | None = None) -> Pa
     marks.append((len(pts) - 1, course.segments[-1].name.split("→")[-1].strip()))
     x = cumulative_km(pts)
     fig, ax = plt.subplots(figsize=(10, 4), dpi=150)
-    ax.fill_between(x, elev, min(elev) - 30, color="#7aa874", alpha=0.35)
-    ax.plot(x, elev, color="#2f5d3a", lw=2)
+    from src.media.design import tokens as _tk
+    C = _tk()["color"]
+    ax.fill_between(x, elev, min(elev) - 30, color=C["chart_fill"], alpha=0.35)
+    ax.plot(x, elev, color=C["chart_line"], lw=2)
     for i, name in marks:
         ax.annotate(name, (x[i], elev[i]), textcoords="offset points", xytext=(0, 10), ha="center", fontsize=9)
-        ax.plot(x[i], elev[i], "o", color="#c0392b", ms=5)
+        ax.plot(x[i], elev[i], "o", color=C["chart_point"], ms=5)
     gain = sum(max(0, elev[i + 1] - elev[i]) for i in range(len(elev) - 1))
     ax.set_xlabel("거리 (km)"); ax.set_ylabel("고도 (m)"); ax.grid(alpha=0.3)
     fig.tight_layout(); out.parent.mkdir(parents=True, exist_ok=True); fig.savefig(out); plt.close(fig)
-    from src.media.emoji_text import add_title_band
-    return add_title_band(out, title or f"⛰️ {course.mountain} · 📈 고도 프로파일 · 📏 {x[-1]:.1f} km · 누적 상승 {gain:.0f} m")
+    from src.media.design import add_title_band
+    return add_title_band(out, [("icon", "mountain"), course.mountain, "·", ("icon", "trending_up"), "고도 프로파일", "·", ("icon", "ruler"), f"{x[-1]:.1f} km · 누적 상승 {gain:.0f} m"] if not title else [title])
 
 # ---- 4. 구간 타임라인 표 ---------------------------------------------------------------
 def timeline_table(course: Course, start: str = "09:00", lunch_min: int = 30) -> str:
@@ -252,40 +253,37 @@ def radar_chart(scores: dict[str, dict[str, int]], out: Path, title: str = "난�
     ax.set_xticks(ang[:-1]); ax.set_xticklabels(AXES, fontsize=11); ax.set_ylim(0, 5); ax.set_yticks([1, 2, 3, 4, 5])
     ax.legend(loc="lower right", bbox_to_anchor=(1.15, -0.1), fontsize=9)
     fig.tight_layout(); out.parent.mkdir(parents=True, exist_ok=True); fig.savefig(out); plt.close(fig)
-    from src.media.emoji_text import add_title_band
-    return add_title_band(out, title if EMOJI_RE.search(title) else f"🥾 {title}")
+    from src.media.design import add_title_band
+    return add_title_band(out, [("icon", "flame"), title])
 
-# ---- 6. 요약 카드 --------------------------------------------------------------------
+# ---- 6. 요약 카드 (디자인 토큰 + 자체 아이콘, 이모지 없음) ------------------------------
 def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str = "", size: int = 1080) -> Path:
-    from PIL import Image, ImageDraw, ImageFont
-    def font(sz):
-        for p in ["/System/Library/Fonts/AppleSDGothicNeo.ttc", "/System/Library/Fonts/Supplemental/AppleGothic.ttf",
-                  "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"]:
-            if Path(p).exists():
-                return ImageFont.truetype(p, sz)
-        return ImageFont.load_default()
-    from src.media.emoji_text import emoji_image as emoji_img
-    from src.media.emoji_text import draw_mixed
-    img = Image.new("RGB", (size, size), "#1f3d2b"); d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, size, 14], fill="#e8b04b")
+    from PIL import Image, ImageDraw
+    from src.media.design import tokens, font, draw_row, level_icons
+    from src.emoji import _LABEL_TO_LEVEL, LEVEL_NAME
+    T = tokens(); C, F, S = T["color"], T["font"], T["space"]; m = S["margin"]
+    img = Image.new("RGB", (size, size), C["bg"]); d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, size, 14], fill=C["accent"])
+    draw_row(img, (m, 90), [("icon", "mountain"), course.mountain], F["title"], C["text"])
+    d.text((m, 210), subtitle or " → ".join(s.name.split("→")[0].strip() for s in course.segments) + " → " + course.segments[-1].name.split("→")[-1].strip(), font=font("subtitle"), fill=C["muted"])
     elev = [e for s in course.segments for e in s.elev]
     gain = f"{max(elev) - min(elev):.0f} m" if elev else "-"
-    draw_mixed(img, (70, 90), f"⛰️ {course.mountain}", 92, "white")
-    d.text((70, 210), subtitle or " → ".join(s.name.split("→")[0].strip() for s in course.segments) + " → " + course.segments[-1].name.split("→")[-1].strip(), font=font(40), fill="#d9e4d5")
-    from src.emoji import _LABEL_TO_LEVEL, LEVEL_NAME, DIFFICULTY_LABEL
     lvl = max((_LABEL_TO_LEVEL.get(s.difficulty.replace(" ", ""), 0) for s in course.segments), default=0) or 3
-    stats = [(f"{E['distance']} 거리(왕복)", f"{course.length_km * 2:.1f} km"), (f"{E['time']} 소요(상행)", f"{course.up_min // 60}시간 {course.up_min % 60}분"),
-             (f"{E['elevation']} 고도차", gain), (DIFFICULTY_LABEL, f"{LEVEL_NAME[lvl]} {boots(lvl)}")]
+    rows = [("ruler", "거리(왕복)", f"{course.length_km * 2:.1f} km"), ("timer", "소요(상행)", f"{course.up_min // 60}시간 {course.up_min % 60}분"),
+            ("trending_up", "고도차", gain), ("flame", "난이도", LEVEL_NAME[lvl])]
     y = 360
-    for label, val in stats:
-        d.rounded_rectangle([70, y, size - 70, y + 120], radius=18, fill="#2f5d3a")
-        draw_mixed(img, (100, y + 38), label, 34, "#bfd3c1")
-        tmp = Image.new("RGBA", (size, 80), (0, 0, 0, 0)); w = draw_mixed(tmp, (0, 0), val, 46, "white")
-        img.paste(tmp.crop((0, 0, max(w, 1), 80)), (size - 100 - w, y + 30), tmp.crop((0, 0, max(w, 1), 80)))
-        y += 140
+    for ic, label, val in rows:
+        d.rounded_rectangle([m, y, size - m, y + S["panel_h"]], radius=S["radius"], fill=C["panel"])
+        draw_row(img, (m + 30, y + 38), [("icon", ic), label], F["label"], C["muted"])
+        if ic == "flame":
+            w = level_icons(img, (size - m - 30, y + 34), lvl, F["value"], C["accent"], C["muted"], align="right")
+            draw_row(img, (size - m - 30 - w - 24, y + 34), [val], F["value"], C["text"], align="right")
+        else:
+            draw_row(img, (size - m - 30, y + 30), [val], F["value"], C["text"], align="right")
+        y += S["panel_h"] + S["panel_gap"]
     if season_note:
-        draw_mixed(img, (70, y + 20), f"🍁 {season_note}", 38, "#e8b04b")
-    d.text((70, size - 80), "코스 데이터: 산림청 등산로정보 · 자세한 코스는 본문에서", font=font(28), fill="#9fb3a3")
+        draw_row(img, (m, y + 20), [("icon", "leaf"), season_note], F["season"], C["accent"])
+    d.text((m, size - 80), "코스 데이터: 산림청 등산로정보 · 자세한 코스는 본문에서", font=font("caption"), fill=C["faint"])
     out.parent.mkdir(parents=True, exist_ok=True); img.save(out); return out
 
 # ---- 전체 -----------------------------------------------------------------------------
@@ -296,7 +294,7 @@ def build_all(course: Course, out_dir: Path, start: str = "09:00", access: int =
     ensure_elevation(course, dry_run)
     out_dir.mkdir(parents=True, exist_ok=True)
     res = {"profile": elevation_profile(course, out_dir / "profile.png"),
-           "radar": radar_chart({course.mountain: difficulty_scores(course, access, view)}, out_dir / "radar.png", f"⛰️ {course.mountain} · 💪 난이도"),
+           "radar": radar_chart({course.mountain: difficulty_scores(course, access, view)}, out_dir / "radar.png", f"{course.mountain} 난이도"),
            "card": summary_card(course, out_dir / "card.png", season_note=season_note),
            "timeline": timeline_table(course, start)}
     (out_dir / "timeline.md").write_text(res["timeline"], encoding="utf-8")

@@ -1,0 +1,32 @@
+# 디자인 토큰 — 카드·그래프 등 생성 이미지의 색·글자·간격·아이콘 규칙. 이모지는 이미지에 쓰지 않는다(OS 의존).
+color:
+  bg: "#1F3D2B"          # 카드 배경 (짙은 숲)
+  panel: "#2F5D3A"       # 항목 패널
+  accent: "#E8B04B"      # 강조 (단풍 노랑)
+  text: "#FFFFFF"
+  muted: "#BFD3C1"       # 라벨
+  faint: "#9FB3A3"       # 출처
+  chart_line: "#2F5D3A"
+  chart_fill: "#7AA874"
+  chart_point: "#C0392B"
+  chart_text: "#1F3D2B"
+  chart_bg: "#FFFFFF"
+font:                    # px (카드 1080 기준)
+  title: 92
+  subtitle: 40
+  label: 34
+  value: 46
+  caption: 28
+  season: 38
+  chart_title: 30
+  family: ["/System/Library/Fonts/AppleSDGothicNeo.ttc", "/System/Library/Fonts/Supplemental/AppleGothic.ttf", "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"]
+space:
+  margin: 70
+  panel_h: 120
+  panel_gap: 20
+  radius: 18
+  icon_gap: 16
+icon:
+  ratio: 1.0             # 아이콘 높이 = 글자 캡 높이 × ratio
+  stroke_ratio: 0.09     # 선 굵기 = 아이콘 높이 × ratio
+  level_max: 5

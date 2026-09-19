@@ -1,0 +1,7 @@
+# 탐방로 통제 수동 기록. 공식 오픈API 를 확인하지 못해 발행 전 사람이 확인해 갱신한다.
+# 확인처: 국립공원공단 https://www.knps.or.kr (탐방로 통제 정보), 산림청 산불조심기간 입산통제 https://www.forest.go.kr
+check_urls:
+  - "https://www.knps.or.kr/portal/main/contents.do?menuNo=7020096"
+  - "https://www.forest.go.kr"
+closures:
+  # - {park: "설악산", trail: "공룡능선", until: "2026-11-15", reason: "산불조심기간"}

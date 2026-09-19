@@ -38,6 +38,7 @@ class Segment:
 class Course:
     mountain: str
     segments: list[Segment]
+    context_lines: list[list[tuple[float, float]]] = field(default_factory=list)   # 미니맵용 주변 등산로
 
     @property
     def points(self) -> list[tuple[float, float]]:
@@ -130,22 +131,26 @@ def find_course(mountain: str, segment_filter: list[str] | None = None, trails_d
         elif p.suffix.lower() == ".gpx":
             segs += load_gpx(p)
     segs = [s for s in segs if mountain in (s.__dict__.get("mountain") or "") or mountain in s.name or mountain in Path(str(s.name)).stem]
+    all_lines = [s.coords for s in segs]
     if segment_filter:
         chosen = [next((s for s in segs if f in s.name), None) for f in segment_filter]
         segs = [s for s in chosen if s]
-    return Course(mountain, segs) if segs else None
+    return Course(mountain, segs, context_lines=all_lines) if segs else None
 
 def sample_course() -> Course:
     """파일이 없을 때 검증용: 북한산 우이동→백운대 형태의 가상 코스 (좌표·고도 근사)."""
-    def seg(name, a, b, n, e0, e1, km, up, diff):
-        coords = [(a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n) for i in range(n + 1)]
+    def seg(name, a, b, n, e0, e1, km, up, diff, wiggle=0.0012):
+        coords = [(a[0] + (b[0] - a[0]) * i / n + wiggle * math.sin(i * 1.7), a[1] + (b[1] - a[1]) * i / n + wiggle * 0.6 * math.cos(i * 1.3)) for i in range(n + 1)]
         elev = [e0 + (e1 - e0) * (i / n) ** 1.3 for i in range(n + 1)]
         return Segment(name, coords, km, up, int(up * 0.7), diff, elev)
-    return Course("북한산(샘플)", [
-        seg("우이동 → 도선사", (127.0129, 37.6625), (127.0000, 37.6560), 12, 120, 290, 1.8, 35, "쉬움"),
-        seg("도선사 → 백운봉암문", (127.0000, 37.6560), (126.9905, 37.6600), 14, 290, 720, 1.6, 65, "보통"),
-        seg("백운봉암문 → 백운대", (126.9905, 37.6600), (126.9890, 37.6610), 6, 720, 836, 0.4, 20, "어려움"),
+    c = Course("북한산(샘플)", [
+        seg("우이동 → 도선사", (127.0129, 37.6625), (127.0040, 37.6580), 12, 120, 290, 1.8, 35, "쉬움"),
+        seg("도선사 → 백운봉암문", (127.0040, 37.6580), (126.9930, 37.6605), 14, 290, 720, 1.6, 65, "보통"),
+        seg("백운봉암문 → 백운대", (126.9930, 37.6605), (126.9898, 37.6612), 6, 720, 836, 0.4, 20, "어려움"),
     ])
+    c.context_lines = [[(126.9898, 37.6612), (126.9850, 37.6560), (126.9800, 37.6500)], [(127.0040, 37.6580), (127.0080, 37.6520), (127.0110, 37.6470)],
+                       [(126.9930, 37.6605), (126.9960, 37.6660), (127.0010, 37.6700)]]
+    return c
 
 # ---- 고도 ------------------------------------------------------------------------
 _CACHE = DATA / "trails" / "elevation_cache.json"

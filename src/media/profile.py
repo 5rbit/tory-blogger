@@ -1,6 +1,6 @@
 """고도 프로파일 — 레이어 조합형. 프리셋으로 밀도를 고른다.
 레이어: slope_fill(경사 색칠) time_axis(상단 시간축) markers(아이콘 마커) hardest(최대 경사 구간) foliage_band(고도별 단풍 띠)
-        sunset(일몰선) roundtrip(하산 점선) minimap(경로 미니맵) stats(하단 수치 스트립)
+        sun(일출·일몰선, 헤드랜턴 구간) roundtrip(하산 점선) minimap(경로 미니맵: 북쪽·축척·주변 등산로) stats(하단 수치 스트립)
 """
 from __future__ import annotations
 import math
@@ -13,8 +13,8 @@ log = get_logger(__name__)
 PRESETS = {
     "basic":    ["markers", "stats"],
     "standard": ["slope_fill", "time_axis", "markers", "hardest", "stats"],
-    "season":   ["slope_fill", "time_axis", "markers", "hardest", "stats", "foliage_band", "sunset"],
-    "full":     ["slope_fill", "time_axis", "markers", "hardest", "stats", "foliage_band", "sunset", "roundtrip", "minimap"],
+    "season":   ["slope_fill", "time_axis", "markers", "hardest", "stats", "foliage_band", "sun"],
+    "full":     ["slope_fill", "time_axis", "markers", "hardest", "stats", "foliage_band", "sun", "roundtrip", "minimap"],
 }
 GRADE_COLORS = [(6, "#7AA874"), (12, "#D9C15A"), (18, "#E8963E"), (99, "#C0392B")]   # 경사 % 상한, 색
 
@@ -25,19 +25,26 @@ def grade_color(pct: float) -> str:
     return GRADE_COLORS[-1][1]
 
 # ---- 일몰 (NOAA 근사, API 불필요) --------------------------------------------------------
-def sunset_time(lat: float, lon: float, d: date, tz_hours: int = 9) -> datetime:
+def sun_time(lat: float, lon: float, d: date, rising: bool, tz_hours: int = 9) -> datetime:
+    """NOAA 근사 일출/일몰 (지방시, API 불필요)."""
     n = d.timetuple().tm_yday
-    lng_hour = lon / 15.0; t = n + ((18 - lng_hour) / 24)
+    lng_hour = lon / 15.0; t = n + (((6 if rising else 18) - lng_hour) / 24)
     M = (0.9856 * t) - 3.289
     L = (M + 1.916 * math.sin(math.radians(M)) + 0.020 * math.sin(math.radians(2 * M)) + 282.634) % 360
     RA = math.degrees(math.atan(0.91764 * math.tan(math.radians(L)))) % 360
     RA += (math.floor(L / 90) * 90) - (math.floor(RA / 90) * 90); RA /= 15
     sinDec = 0.39782 * math.sin(math.radians(L)); cosDec = math.cos(math.asin(sinDec))
     cosH = (math.cos(math.radians(90.833)) - sinDec * math.sin(math.radians(lat))) / (cosDec * math.cos(math.radians(lat)))
-    H = math.degrees(math.acos(max(-1, min(1, cosH)))) / 15
+    H = math.degrees(math.acos(max(-1, min(1, cosH)))); H = (360 - H) if rising else H; H /= 15
     T = H + RA - (0.06571 * t) - 6.622
     UT = (T - lng_hour) % 24; local = (UT + tz_hours) % 24
     return datetime.combine(d, datetime.min.time()) + timedelta(hours=local)
+
+def sunset_time(lat: float, lon: float, d: date, tz_hours: int = 9) -> datetime:
+    return sun_time(lat, lon, d, rising=False, tz_hours=tz_hours)
+
+def sunrise_time(lat: float, lon: float, d: date, tz_hours: int = 9) -> datetime:
+    return sun_time(lat, lon, d, rising=True, tz_hours=tz_hours)
 
 # ---- 단풍 고도 띠 -------------------------------------------------------------------------
 def foliage_threshold(mountain: str, on: date, descent_m_per_day: float = 40.0) -> tuple[float, str] | None:
@@ -137,14 +144,33 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
         ticks = ticks[keep]
         sec.set_xticks(ticks); sec.set_xticklabels([(t0 + timedelta(minutes=float(m))).strftime("%H:%M") for m in ticks], fontsize=8)
         sec.set_xlabel(f"예상 시각 ({start} 출발)", fontsize=9)
-        # 6) 일몰선
-        if "sunset" in L and lat is not None and lon is not None:
-            ss = sunset_time(lat, lon, on); ss_min = (ss - datetime.combine(on, t0.time())).total_seconds() / 60
+        # 6) 일출·일몰선 + 헤드랜턴 구간
+        if "sun" in L and lat is not None and lon is not None:
+            day0 = datetime.combine(on, t0.time())
+            sr = sunrise_time(lat, lon, on); ss = sunset_time(lat, lon, on)
+            sr_min = (sr - day0).total_seconds() / 60; ss_min = (ss - day0).total_seconds() / 60
+            notes = []; line_xs = []
+            span = xs_all[-1] - xs_all[0]; rng = y.max() - y.min()
+            def vline(xs, label, color, ls):
+                ax.axvline(xs, color=color, ls=ls, lw=1.5)
+                ax.text(xs, base + rng * 0.30, label, color=color, fontsize=8, ha="center", va="bottom", rotation=90,
+                        bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.85))
+                line_xs.append(xs)
+            if sr_min > 0:                                  # 출발이 일출 전 → 어두운 구간
+                xs = float(np.interp(min(sr_min, total), ts_all, xs_all))
+                ax.axvspan(xs_all[0], xs, color="#2C3E50", alpha=0.10); vline(xs, f"일출 {sr:%H:%M}", "#E67E22", "-.")
+                notes.append(f"헤드랜턴 {int(min(sr_min, total))}분")
+            else:
+                notes.append(f"일출 {sr:%H:%M}")
             if 0 < ss_min < total:
                 xs = float(np.interp(ss_min, ts_all, xs_all))
-                ax.axvline(xs, color="#6C3483", ls=":", lw=1.5); ax.text(xs, y.max() + 20, f"일몰 {ss:%H:%M}", color="#6C3483", fontsize=8, ha="center")
-            elif ss_min >= total:
-                ax.text(0.99 if left_low else 0.01, 0.96, f"일몰 {ss:%H:%M} · 하산 후 여유 {int(ss_min - total)}분", transform=ax.transAxes, ha="right" if left_low else "left", va="top", fontsize=8, color="#6C3483")
+                ax.axvspan(xs, xs_all[-1], color="#2C3E50", alpha=0.10); vline(xs, f"일몰 {ss:%H:%M}", "#6C3483", ":")
+                notes.append("일몰 후 하산 주의")
+            else:
+                notes.append(f"일몰 {ss:%H:%M} · 여유 {int(ss_min - total)}분")
+            # 안내문은 선과 반대편, 선이 없으면 빈 쪽
+            right = (left_low if not line_xs else (min(line_xs) - xs_all[0]) < span * 0.5)
+            ax.text(0.99 if right else 0.01, 0.96, " · ".join(notes), transform=ax.transAxes, ha="right" if right else "left", va="top", fontsize=8, color="#6C3483")
 
     ax.set_xlabel("거리 (km)"); ax.set_ylabel("고도 (m)"); ax.grid(alpha=0.3)
     ax.set_ylim(base, y.max() + (y.max() - y.min()) * 0.22)
@@ -164,11 +190,24 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
         xi = float(p["km"]); yi = float(np.interp(xi, x, y)); px, py = ax.transData.transform((xi, yi))
         px_marks.append((px, py, p.get("icon", "pin"), "")); ax.annotate(p.get("label", ""), (xi, yi), textcoords="offset points", xytext=(0, -16), ha="center", fontsize=8, color="#555")
 
-    # 8) 미니맵
+    # 8) 미니맵: 주변 등산로(흐림) + 이 코스 + 들머리/정상 라벨 + 북쪽 화살표 + 축척
     if "minimap" in L:
-        ins = ax.inset_axes([0.03 if left_low else 0.75, 0.62, 0.22, 0.34]); lons = [p[0] for p in pts]; lats = [p[1] for p in pts]
-        ins.plot(lons, lats, color=C["chart_line"], lw=1.5); ins.plot(lons[0], lats[0], "s", color="#2980B9", ms=4); ins.plot(lons[-1], lats[-1], "^", color=C["chart_point"], ms=5)
-        ins.set_aspect(1 / math.cos(math.radians(sum(lats) / len(lats)))); ins.set_xticks([]); ins.set_yticks([]); ins.set_title("경로", fontsize=7, pad=2)
+        ins = ax.inset_axes([0.03 if left_low else 0.73, 0.58, 0.24, 0.38]); lons = [p[0] for p in pts]; lats = [p[1] for p in pts]
+        ins.set_facecolor("#F7F9F5")
+        for other in (getattr(course, "context_lines", None) or []):          # 같은 산의 다른 구간
+            ins.plot([q[0] for q in other], [q[1] for q in other], color="#9FB3A3", lw=0.8, alpha=0.7)
+        ins.plot(lons, lats, color=C["chart_line"], lw=2)
+        ins.plot(lons[0], lats[0], "s", color="#2980B9", ms=5); ins.plot(lons[-1], lats[-1], "^", color=C["chart_point"], ms=6)
+        ins.annotate(marks[0][2], (lons[0], lats[0]), textcoords="offset points", xytext=(4, -9), fontsize=6, color="#2980B9")
+        ins.annotate(marks[-1][2], (lons[-1], lats[-1]), textcoords="offset points", xytext=(4, 3), fontsize=6, color=C["chart_point"])
+        aspect = 1 / math.cos(math.radians(sum(lats) / len(lats))); ins.set_aspect(aspect)
+        ins.margins(0.25); ins.set_xticks([]); ins.set_yticks([])
+        ins.annotate("N", xy=(0.92, 0.80), xytext=(0.92, 0.62), xycoords="axes fraction", textcoords="axes fraction", ha="center", fontsize=7,
+                     arrowprops=dict(arrowstyle="-|>", color="#333", lw=1))
+        # 축척 500 m
+        x0, x1 = ins.get_xlim(); yl0, yl1 = ins.get_ylim(); deg = 0.5 / (111.32 * math.cos(math.radians(sum(lats) / len(lats))))
+        bx = x0 + (x1 - x0) * 0.06; by = yl0 + (yl1 - yl0) * 0.08
+        ins.plot([bx, bx + deg], [by, by], color="#333", lw=2); ins.text(bx + deg / 2, by + (yl1 - yl0) * 0.03, "500 m", ha="center", fontsize=6)
         for sp in ins.spines.values(): sp.set_alpha(0.3)
 
     fig.savefig(out); h_px = fig.get_size_inches()[1] * fig.dpi; plt.close(fig)

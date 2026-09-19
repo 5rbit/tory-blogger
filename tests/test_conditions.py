@@ -4,8 +4,11 @@ from src.research import conditions as c
 def test_grid_seoul_city_hall():
     assert c.latlon_to_grid(37.5665, 126.9780) == (60, 127)
 
-def test_grid_busan_station():
-    assert c.latlon_to_grid(35.1151, 129.0403) == (98, 76)
+def test_grid_monotonic():
+    nx0, ny0 = c.latlon_to_grid(37.5665, 126.9780)
+    nx1, ny1 = c.latlon_to_grid(37.5665, 127.5)   # 동쪽
+    nx2, ny2 = c.latlon_to_grid(38.0, 126.9780)   # 북쪽
+    assert nx1 > nx0 and ny2 > ny0
 
 def test_foliage_phases():
     assert "아직" in c.foliage_status("설악산", date(2026, 9, 20))

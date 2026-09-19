@@ -20,7 +20,7 @@ def test_headers_fields(monkeypatch):
     assert h["X-Customer"] == "c"
 
 def test_parse_handles_lt10_and_comp():
-    items = [{"relKeyword": "AI 도구", "monthlyPcQcCnt": 1200, "monthlyMobileQcCnt": "< 10", "compIdx": "낮음",
+    items = [{"relKeyword": "북한산 단풍", "monthlyPcQcCnt": 1200, "monthlyMobileQcCnt": "< 10", "compIdx": "낮음",
               "monthlyAvePcClkCnt": 3.5, "monthlyAveMobileClkCnt": 1},
              {"relKeyword": "x", "monthlyPcQcCnt": "< 10", "monthlyMobileQcCnt": "< 10", "compIdx": "높음"}]
     c = api.parse_keyword_list(items)

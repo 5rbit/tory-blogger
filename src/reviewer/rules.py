@@ -14,7 +14,7 @@ def check(markdown: str, title: str) -> list[RuleResult]:
     r = pipeline_config()["review"]
     body = re.sub(r"\s", "", re.sub(r"#\S+", "", markdown))
     headings = re.findall(r"^##\s", markdown, flags=re.M)
-    photos = re.findall(r"\[사진:", markdown)
+    photos = re.findall(r"\[사진:|^!\[", markdown, flags=re.M)
     exp = re.findall(r"직접|제 경우|써보니|해보니", markdown)
     links = re.findall(r"https?://", markdown)
     tags = re.findall(r"(?<![\w#])#(?!#)[\w가-힣]+", markdown)

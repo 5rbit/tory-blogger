@@ -10,13 +10,13 @@ def test_is_personal():
     assert not api.is_personal({"link": "https://company.com/post"})
 
 def test_analyze():
-    items = [{"bloggerlink": "https://blog.naver.com/a", "title": "<b>AI</b> 도구", "description": "x" * 50, "postdate": "20990101"},
+    items = [{"bloggerlink": "https://blog.naver.com/a", "title": "<b>북한산</b> 단풍", "description": "x" * 50, "postdate": "20990101"},
              {"bloggerlink": "https://blog.naver.com/brand_store", "title": "t", "description": "", "postdate": "20100101"},
              {"link": "https://b.tistory.com/1", "title": "t", "description": "yy", "postdate": "20990101"}]
     a = api.analyze(items)
     assert a["personal_ratio"] == pytest.approx(1 / 3)
     assert a["naver_ratio"] == pytest.approx(2 / 3)
-    assert a["top_titles"][0] == "AI 도구"
+    assert a["top_titles"][0] == "북한산 단풍"
     assert a["avg_desc_len"] == 17
 
 def test_headers_require_env(monkeypatch):

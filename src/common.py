@@ -15,7 +15,7 @@ TEMPLATES = ROOT / "src" / "templates"
 load_dotenv(ROOT / ".env")
 
 # ---- 실험(블로그) 컨텍스트 -------------------------------------------------
-# 여러 블로그를 병렬로 굴린다. 실험마다 experiments/<id>/pipeline.yaml (base 설정 위에 덮어씀),
+# 블로그(실험) 단위 컨텍스트. 실험마다 experiments/<id>/pipeline.yaml (base 설정 위에 덮어씀),
 # data/<id>/ (키워드·초안·리포트), 브라우저 프로필이 분리된다.
 _current_experiment: str | None = None
 

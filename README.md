@@ -1,6 +1,6 @@
 # tory-blogger — 등산 블로거 수익화 전략 및 반자동 파이프라인
 
-**주 2~3회 산에 가는 디지털 노마드 등산 블로거** 페르소나로 네이버 블로그를 수익화합니다. "이맘때 가기 좋은 코스 + 직접 찍은 사진 + 네이버 지도 루트 + 그날 쓴 용품 + 하산 후 맛집" 을 표준 구조로, 초안·표·맛집 목록까지 자동으로 만들고 사진과 발행은 사람이 합니다.
+**주 2~3회 산에 가는 디지털 노마드 등산 블로거** 페르소나로 네이버 블로그를 수익화합니다. "이맘때 가기 좋은 코스 + 포토코리아 공공누리 사진 + 네이버 지도 루트 + 그날 쓴 용품 + 하산 후 맛집" 을 표준 구조로, 초안·표·맛집 목록까지 자동으로 만들고 사진과 발행은 사람이 합니다.
 
 ## 문서 구성
 
@@ -10,13 +10,13 @@
 | [docs/02-자동화-실행-계획.md](docs/02-자동화-실행-계획.md) | 반자동 파이프라인 아키텍처, 모듈별 설계, 휴먼 게이트 |
 | [docs/03-로드맵-및-KPI.md](docs/03-로드맵-및-KPI.md) | 12주 로드맵, 측정 지표, 리스크 |
 | [docs/04-수익-리서치.md](docs/04-수익-리서치.md) | 네이버 블로거 실제 수익 구조·시세 리서치, 돈 되는 주제 결론 |
-| [docs/05-병렬-실험-계획.md](docs/05-병렬-실험-계획.md) | 글 유형·지역·용품 배치·발행 시점을 변수로 한 실험 설계 |
+| [docs/05-실험-계획.md](docs/05-실험-계획.md) | 글 유형·지역·용품 배치·발행 시점을 변수로 한 실험 설계 |
 
 ## 전제
 
 - 블로그: 1개 (`experiments/hiker`). 글 유형·지역을 변수로 실험
 - 수익원: 쇼핑커넥트(그날 쓴 용품 1개) · 애드포스트(계절 트래픽) · 네이버 메이트(코스 표 인용) · 아웃도어 체험단
-- 데이터: 데이터랩 트렌드(이맘때 예측), 검색광고 API(검색량), 등산로 공공데이터(코스 표), 지역 검색(맛집)
+- 데이터: 데이터랩 트렌드(이맘때 예측), 검색광고 API(검색량), 등산로 공공데이터(코스 표), 지역 검색(맛집), 포토코리아(사진, 공공누리 1유형), 기상청 단기예보(날씨)
 - 발행 방식: 초안 생성·검수·에디터 채우기는 자동, **발행 버튼은 사람이 클릭**
 - 글 생성·채점: 설치된 Claude Code CLI(`claude -p`)를 구독 계정으로 호출. API 키 불필요
 - 키워드 발굴: 네이버 검색광고 API + 네이버 검색 API (공식)
@@ -30,11 +30,12 @@ pip install -e .
 cp .env.example .env   # 네이버 API 키 입력 (Claude는 로그인된 CLI 사용)
 python scripts/weekly_plan.py --exp hiker --dry-run
 python scripts/daily_draft.py --exp hiker --dry-run
+python scripts/attach_photos.py --exp hiker <초안.md> --keyword 북한산 --dry-run
 python scripts/refresh_conditions.py --exp hiker <초안.md> --trailhead "북한산 우이동" --mountain 북한산 --dry-run
 ```
 
 ## 파이프라인 한눈에 보기
 
 ```
-research → planner → writer → reviewer → [사람 승인] → publisher(에디터 채움) → [사람 발행] → distributor → analytics
+research → planner → writer → reviewer → [사람 승인] → attach_photos → refresh_conditions → publisher(에디터 채움) → [사람 발행] → distributor → analytics
 ```

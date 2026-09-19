@@ -221,17 +221,19 @@ def timeline_table(course: Course, start: str = "09:00", lunch_min: int = 30) ->
     return "\n".join(rows)
 
 # ---- 5. 난이도 레이더 -----------------------------------------------------------------
-AXES = ["거리", "고도차", "경사", "접근성", "조망"]
+AXES = ["거리", "고도차", "경사", "기술", "접근성", "조망"]
+TECH = {"쉬움": 1, "하": 1, "보통": 3, "중": 3, "어려움": 5, "상": 5, "매우어려움": 5}
 
 def difficulty_scores(course: Course, access: int = 3, view: int = 4) -> dict[str, int]:
-    """1~5 점수. 거리/고도차/경사는 데이터로, 접근성·조망은 사람이 준다."""
+    """1~5 점수. 거리/고도차/경사/기술(구간 난이도 최댓값)은 데이터로, 접근성·조망은 사람이 준다."""
     km = course.length_km * 2
     elev = [e for s in course.segments for e in s.elev]
     gain = (max(elev) - min(elev)) if elev else 0
     slope = gain / max(course.length_km * 1000, 1) * 100
     def band(v, cuts): return 1 + sum(v > c for c in cuts)
+    tech = max((TECH.get(s.difficulty.replace(" ", ""), 0) for s in course.segments), default=0) or band(slope, [8, 12, 16, 20])
     return {"거리": band(km, [6, 10, 14, 18]), "고도차": band(gain, [300, 500, 700, 900]),
-            "경사": band(slope, [8, 12, 16, 20]), "접근성": max(1, min(5, access)), "조망": max(1, min(5, view))}
+            "경사": band(slope, [8, 12, 16, 20]), "기술": tech, "접근성": max(1, min(5, access)), "조망": max(1, min(5, view))}
 
 def radar_chart(scores: dict[str, dict[str, int]], out: Path, title: str = "난이도 비교") -> Path:
     """{코스명: {축: 점수}} 여러 코스를 겹쳐 그린다."""

@@ -12,7 +12,8 @@ def test_sample_course_lengths_and_timeline():
 
 def test_scores_in_range():
     sc = cv.difficulty_scores(cv.sample_course(), access=5, view=2)
-    assert set(sc) == set(cv.AXES) and all(1 <= v <= 5 for v in sc.values()) and sc["접근성"] == 5
+    assert set(sc) == set(cv.AXES) and len(cv.AXES) == 6 and all(1 <= v <= 5 for v in sc.values()) and sc["접근성"] == 5
+    assert sc["기술"] == 5   # 샘플 코스 마지막 구간 '어려움'
 
 def test_build_all_creates_files(tmp_path):
     res = cv.build_all(cv.sample_course(), tmp_path, dry_run=True)

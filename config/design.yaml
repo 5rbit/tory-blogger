@@ -3,6 +3,7 @@ color:
   bg: "#1F3D2B"          # 카드 배경 (짙은 숲)
   panel: "#2F5D3A"       # 항목 패널
   accent: "#E8B04B"      # 강조 (단풍 노랑)
+  flame: "#F0742E"       # 난이도 불꽃 (채움)
   text: "#FFFFFF"
   muted: "#BFD3C1"       # 라벨
   faint: "#9FB3A3"       # 출처

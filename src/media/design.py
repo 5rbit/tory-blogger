@@ -26,7 +26,9 @@ ICONS: dict[str, list[tuple]] = {
     "trending_up":[("L", [(3, 17), (9, 11), (13, 15), (21, 7)]), ("L", [(15, 7), (21, 7), (21, 13)])],
     "boot":       [("F", [(4, 3), (11, 3), (11, 11), (13, 13), (19, 14), (21, 16), (21, 20), (3, 20), (3, 17), (4, 14)]), ("L", [(3, 17), (21, 17)])],
     "boot_off":   [("P", [(4, 3), (11, 3), (11, 11), (13, 13), (19, 14), (21, 16), (21, 20), (3, 20), (3, 17), (4, 14)])],
-    "flame":      [("L", [(12, 2), (7, 9), (6, 14), (8, 19), (12, 22), (16, 19), (18, 14), (17, 9), (12, 2)]), ("L", [(12, 11), (10, 15), (12, 18), (14, 15), (12, 11)])],
+    "flame":      [("P", [(12, 2), (8, 8), (6, 13), (7, 18), (12, 22), (17, 18), (18, 13), (16, 8), (14, 10), (13, 5)]), ("L", [(12, 12), (10, 16), (12, 19), (14, 16), (12, 12)])],
+    "flame_fill": [("F", [(12, 2), (8, 8), (6, 13), (7, 18), (12, 22), (17, 18), (18, 13), (16, 8), (14, 10), (13, 5)])],
+    "gauge":      [("L", [(4, 16), (5, 11), (8, 7), (12, 6), (16, 7), (19, 11), (20, 16)]), ("L", [(12, 16), (16, 10)]), ("D", (12, 16, 1.5))],
     "leaf":       [("L", [(4, 20), (8, 12), (14, 6), (21, 3), (20, 10), (15, 17), (8, 19), (4, 20)]), ("L", [(4, 20), (14, 10)])],
     "bus":        [("P", [(4, 4), (20, 4), (20, 17), (4, 17)]), ("L", [(4, 11), (20, 11)]), ("D", (8, 14, 1.3)), ("D", (16, 14, 1.3)), ("L", [(6, 17), (6, 20)]), ("L", [(18, 17), (18, 20)])],
     "train":      [("P", [(5, 3), (19, 3), (19, 16), (5, 16)]), ("L", [(5, 10), (19, 10)]), ("D", (9, 13, 1.3)), ("D", (15, 13, 1.3)), ("L", [(8, 16), (5, 21)]), ("L", [(16, 16), (19, 21)])],
@@ -82,12 +84,12 @@ def draw_row(img: Image.Image, xy: tuple[int, int], parts: list, size_px: int, c
     return total
 
 def level_icons(img: Image.Image, xy: tuple[int, int], level: int, size_px: int, on: str, off: str, align: str = "left") -> int:
-    """난이도 등급: 채운 부츠 level 개 + 빈 부츠 (max-level) 개."""
+    """난이도 등급: 채운 불꽃 level 개 + 테두리 불꽃 (max-level) 개."""
     f = font(size_px); t, cap = cap_height(f); ih = int(cap * 1.15); gap = 6
     n = tokens()["icon"]["level_max"]; total = n * ih + (n - 1) * gap
     x = xy[0] - total if align == "right" else xy[0]; cy = xy[1] + t + cap / 2
     for i in range(n):
-        ic = icon("boot" if i < level else "boot_off", ih, on if i < level else off); img.paste(ic, (x, int(round(cy - ih / 2))), ic); x += ih + gap
+        ic = icon("flame_fill" if i < level else "flame", ih, on if i < level else off); img.paste(ic, (x, int(round(cy - ih / 2))), ic); x += ih + gap
     return total
 
 def check_alignment(size_px: int = 40) -> dict:

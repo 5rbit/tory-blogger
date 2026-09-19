@@ -254,7 +254,7 @@ def radar_chart(scores: dict[str, dict[str, int]], out: Path, title: str = "난�
     ax.legend(loc="lower right", bbox_to_anchor=(1.15, -0.1), fontsize=9)
     fig.tight_layout(); out.parent.mkdir(parents=True, exist_ok=True); fig.savefig(out); plt.close(fig)
     from src.media.design import add_title_band
-    return add_title_band(out, [("icon", "flame"), title])
+    return add_title_band(out, [("icon", "gauge"), title])
 
 # ---- 6. 요약 카드 (디자인 토큰 + 자체 아이콘, 이모지 없음) ------------------------------
 def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str = "", size: int = 1080) -> Path:
@@ -270,13 +270,13 @@ def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str
     gain = f"{max(elev) - min(elev):.0f} m" if elev else "-"
     lvl = max((_LABEL_TO_LEVEL.get(s.difficulty.replace(" ", ""), 0) for s in course.segments), default=0) or 3
     rows = [("ruler", "거리(왕복)", f"{course.length_km * 2:.1f} km"), ("timer", "소요(상행)", f"{course.up_min // 60}시간 {course.up_min % 60}분"),
-            ("trending_up", "고도차", gain), ("flame", "난이도", LEVEL_NAME[lvl])]
+            ("trending_up", "고도차", gain), ("gauge", "난이도", LEVEL_NAME[lvl])]
     y = 360
     for ic, label, val in rows:
         d.rounded_rectangle([m, y, size - m, y + S["panel_h"]], radius=S["radius"], fill=C["panel"])
         draw_row(img, (m + 30, y + 38), [("icon", ic), label], F["label"], C["muted"])
-        if ic == "flame":
-            w = level_icons(img, (size - m - 30, y + 34), lvl, F["value"], C["accent"], C["muted"], align="right")
+        if ic == "gauge":
+            w = level_icons(img, (size - m - 30, y + 34), lvl, F["value"], C.get("flame", C["accent"]), C["muted"], align="right")
             draw_row(img, (size - m - 30 - w - 24, y + 34), [val], F["value"], C["text"], align="right")
         else:
             draw_row(img, (size - m - 30, y + 30), [val], F["value"], C["text"], align="right")

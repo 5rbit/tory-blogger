@@ -74,7 +74,7 @@ class KeywordCandidate:
     competition: float = 0.0   # 0~1
     personal_ratio: float = 0.0  # 상위 10 중 개인 블로그 비율
     source: str = "seed"
-    post_type: str = "info"    # info | review | issue | hub
+    post_type: str = "course"  # course | curation | gear | nomad
     angle: str = ""
     status: str = "pending"    # pending | approved | rejected | drafted | published
     extra: dict = field(default_factory=dict)

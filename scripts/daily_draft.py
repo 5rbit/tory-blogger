@@ -32,7 +32,7 @@ def run(dry_run):
     if not post:
         if dry_run:
             log.info("[dry-run] 승인 키워드 없음 → 샘플 키워드로 진행")
-            post = {"keyword": "샘플 키워드", "post_type": "info", "status": "approved"}
+            post = {"keyword": "샘플 키워드", "post_type": "course", "status": "approved"}
         else:
             log.info("승인된 키워드가 없습니다. 종료"); return
     kw = KeywordCandidate(**{k: v for k, v in post.items() if k in KeywordCandidate.__dataclass_fields__})

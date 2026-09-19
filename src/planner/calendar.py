@@ -13,7 +13,7 @@ def assign_types(cands: list[KeywordCandidate], n: int, mix: dict[str, float], r
     slots: list[str] = []
     for t, ratio in mix.items():
         slots += [t] * round(n * ratio)
-    slots = (slots + ["info"] * n)[:n]
+    slots = (slots + [next(iter(mix))] * n)[:n]
     for c, t in zip(ranked, slots):
         c.post_type = t
     return ranked

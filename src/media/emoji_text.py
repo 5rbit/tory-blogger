@@ -4,8 +4,9 @@ import re
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-EMOJI_RE = re.compile("[\U0001F300-\U0001FAFF☀-➿⬀-⯿\U0001F000-\U0001F2FF][️‍\U0001F3FB-\U0001F3FF]*"
-                      "(?:‍[\U0001F300-\U0001FAFF☀-➿][️]?)*")
+EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\u2300-\u23FF\u2190-\u21FF\u25A0-\u25FF\u2900-\u297F\u3030\u303D\u3297\u3299\u00A9\u00AE]"
+    "[\uFE0F\u200D\U0001F3FB-\U0001F3FF]*(?:\u200D[\U0001F000-\U0001FAFF\u2600-\u27BF][\uFE0F]?)*")
 _KR = ["/System/Library/Fonts/AppleSDGothicNeo.ttc", "/System/Library/Fonts/Supplemental/AppleGothic.ttf", "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"]
 _EMOJI = [("/System/Library/Fonts/Apple Color Emoji.ttc", 160), ("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf", 109)]
 

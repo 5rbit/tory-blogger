@@ -22,7 +22,7 @@ def render(course, out_gif: Path, seconds: float = 8.0, fps: int = 15, size=(108
     for f in range(n_frames + fps):                      # 마지막 1초 정지
         k = min(len(pts) - 1, int(len(pts) * min(f, n_frames) / n_frames))
         fig = plt.figure(figsize=(W / dpi, H / dpi), dpi=dpi); fig.patch.set_facecolor(C["bg"])
-        axm = fig.add_axes([0.06, 0.50, 0.88, 0.40]); axp = fig.add_axes([0.10, 0.10, 0.84, 0.30])
+        axm = fig.add_axes([0.06, 0.45, 0.88, 0.37]); axp = fig.add_axes([0.10, 0.07, 0.84, 0.30])
         for a in (axm, axp): a.set_facecolor("#F4F7F2")
         # 지도
         for other in getattr(course, "context_lines", []) or []:

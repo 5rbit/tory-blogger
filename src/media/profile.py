@@ -178,9 +178,10 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
     fig.tight_layout(); out.parent.mkdir(parents=True, exist_ok=True)
 
     # 3) 마커 (아이콘은 저장 후 PIL 로 붙임)
-    marks = [(0, "flag", course.segments[0].name.split("→")[0].strip())]
+    from src.media.area_map import circled
+    marks = [(0, "flag", f"{circled(0)} " + course.segments[0].name.split("→")[0].strip())]
     for k, (i0, i1, s) in enumerate(seg_bounds):
-        marks.append((i1, "mountain" if k == len(seg_bounds) - 1 else "pin", s.name.split("→")[-1].strip()))
+        marks.append((i1, "mountain" if k == len(seg_bounds) - 1 else "pin", f"{circled(k + 1)} " + s.name.split("→")[-1].strip()))
     fig.canvas.draw(); px_marks = []; mini_px = []
     for i, ic, label in marks:
         px, py = ax.transData.transform((x[i], y[i])); px_marks.append((px, py, ic, label))
@@ -197,7 +198,9 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
         ins.set_facecolor("#F7F9F5")
         for other in (getattr(course, "context_lines", None) or []):          # 같은 산의 다른 구간
             ins.plot([q[0] for q in other], [q[1] for q in other], color="#9FB3A3", lw=0.8, alpha=0.7)
-        ins.plot(lons, lats, color=C["chart_line"], lw=2)
+        for k in range(len(pts) - 1):
+            dxm = (x[k + 1] - x[k]) * 1000; g = abs(y[k + 1] - y[k]) / dxm * 100 if dxm > 0 else 0
+            ins.plot([lons[k], lons[k + 1]], [lats[k], lats[k + 1]], color=grade_color(g), lw=2.5, solid_capstyle="round")
         ins.annotate(marks[0][2], (lons[0], lats[0]), textcoords="offset points", xytext=(0, -11), fontsize=6, color="#2980B9", ha="center")
         ins.annotate(marks[-1][2], (lons[-1], lats[-1]), textcoords="offset points", xytext=(0, -11), fontsize=6, color=C["chart_point"], ha="center")
         aspect = 1 / math.cos(math.radians(sum(lats) / len(lats))); ins.set_aspect(aspect)

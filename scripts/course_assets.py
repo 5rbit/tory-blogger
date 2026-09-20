@@ -37,7 +37,7 @@ def main(exp, mountain, segments, start, access, view, season, preset, layers, o
         for pname in PRESETS:
             render(course, out / f"profile_{pname}.png", None, pname, start, on_d, lat, lon); log.info("비교용 생성: profile_%s.png", pname)
     res = cv.build_all(course, out, start, access, view, season, dry_run, preset, layers.split(",") if layers else None, on_d)
-    log.info("생성: %s", ", ".join(str(res[k]) for k in ["profile", "radar", "card"]))
+    log.info("생성: %s", ", ".join(str(res[k]) for k in ["profile", "radar", "card", "area_map", "gpx"]))
     print(res["timeline"])
     print(f"\n초안에 넣을 마크다운:\n![{course.mountain} 고도 프로파일]({res['profile']})\n![{course.mountain} 난이도]({res['radar']})")
 

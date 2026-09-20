@@ -148,6 +148,9 @@ def sample_course() -> Course:
         seg("도선사 → 백운봉암문", (127.0040, 37.6580), (126.9930, 37.6605), 14, 290, 720, 1.6, 65, "보통"),
         seg("백운봉암문 → 백운대", (126.9930, 37.6605), (126.9898, 37.6612), 6, 720, 836, 0.4, 20, "어려움"),
     ])
+    c.stops = [{"name": "우이동 종점", "lat": 37.6638, "lon": 127.0142}, {"name": "북한산우이역", "lat": 37.6631, "lon": 127.0122}]
+    c.restaurants = [{"name": "우이동 손두부", "lat": 37.6618, "lon": 127.0150}, {"name": "도선사 입구 칼국수", "lat": 37.6605, "lon": 127.0092}]
+    c.parking = [{"name": "우이동 주차장", "lat": 37.6645, "lon": 127.0128}]
     c.context_lines = [[(126.9898, 37.6612), (126.9850, 37.6560), (126.9800, 37.6500)], [(127.0040, 37.6580), (127.0080, 37.6520), (127.0110, 37.6470)],
                        [(126.9930, 37.6605), (126.9960, 37.6660), (127.0010, 37.6700)]]
     return c
@@ -218,17 +221,18 @@ def elevation_profile(course: Course, out: Path, title: str | None = None) -> Pa
 def timeline_table(course: Course, start: str = "09:00", lunch_min: int = 30) -> str:
     t = datetime.strptime(start, "%H:%M"); km = 0.0
     rows = [f"| {E['time']} 시각 | 지점 | {E['distance']} 누적 | 구간 소요 | 💪 난이도 |", "|---|---|---|---|---|",
-            f"| {t:%H:%M} | {E['start']} {course.segments[0].name.split('→')[0].strip()} (출발) | 0.0 km | - | - |"]
+            f"| {t:%H:%M} | ① {course.segments[0].name.split('→')[0].strip()} (출발) | 0.0 km | - | - |"]
     last = len(course.segments) - 1
     for i, s in enumerate(course.segments):
         km += s.length_km or path_length_km(s.coords); t += timedelta(minutes=s.up_min)
-        icon = E["peak"] if i == last else "📍"
-        rows.append(f"| {t:%H:%M} | {icon} {s.name.split('→')[-1].strip()} | {km:.1f} km | {s.up_min}분 | {difficulty_emoji(s.difficulty or None)} |")
+        from src.media.area_map import circled
+        icon = E["peak"] if i == last else ""
+        rows.append(f"| {t:%H:%M} | {circled(i + 1)} {s.name.split('→')[-1].strip()} {icon} | {km:.1f} km | {s.up_min}분 | {difficulty_emoji(s.difficulty or None)} |")
     t += timedelta(minutes=lunch_min); rows.append(f"| {t:%H:%M} | {E['lunch']} 정상 휴식·점심 {lunch_min}분 | | | |")
     for i, s in enumerate(reversed(course.segments)):
         km += s.length_km or path_length_km(s.coords); t += timedelta(minutes=s.down_min or int(s.up_min * 0.7))
-        icon = E["finish"] if i == last else "📍"
-        rows.append(f"| {t:%H:%M} | {icon} {s.name.split('→')[0].strip()} (하산) | {km:.1f} km | {s.down_min or int(s.up_min*0.7)}분 | |")
+        idx = len(course.segments) - 1 - i
+        rows.append(f"| {t:%H:%M} | {circled(idx)} {s.name.split('→')[0].strip()} (하산{' ' + E['finish'] if i == last else ''}) | {km:.1f} km | {s.down_min or int(s.up_min*0.7)}분 | |")
     return "\n".join(rows)
 
 # ---- 5. 난이도 레이더 -----------------------------------------------------------------
@@ -280,9 +284,11 @@ def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str
         xs = [x_left + (x_right - x_left) * i / max(n - 1, 1) for i in range(n)]
         d.line([(xs[0], y0 + ph), (xs[-1], y0 + ph)], fill=C["muted"], width=4)
         lab = font(28)
+        from src.media.area_map import circled
         for i, (xc, name) in enumerate(zip(xs, names)):
             ic, fg = ("flag", "#2980B9") if i == 0 else (("mountain", C["chart_point"]) if i == n - 1 else ("pin", C["accent"]))
             pn = pin(ic, ph, fg, bg=C["bg"]); img.paste(pn, (int(xc - pn.width / 2), y0), pn)
+            name = f"{circled(i)} {name}"
             tw = d.textlength(name, font=lab); tx = min(max(xc - tw / 2, m), size - m - tw)
             d.text((tx, y0 + ph + 12), name, font=lab, fill=C["muted"])
     elev = [e for s in course.segments for e in s.elev]
@@ -320,5 +326,8 @@ def build_all(course: Course, out_dir: Path, start: str = "09:00", access: int =
            "radar": radar_chart({course.mountain: difficulty_scores(course, access, view)}, out_dir / "radar.png", f"{course.mountain} 난이도"),
            "card": summary_card(course, out_dir / "card.png", season_note=season_note),
            "timeline": timeline_table(course, start)}
+    from src.media.area_map import render as area_render, to_gpx
+    res["area_map"] = area_render(course, out_dir / "area_map.png", getattr(course, "stops", None), getattr(course, "restaurants", None), getattr(course, "parking", None))
+    res["gpx"] = to_gpx(course, out_dir / f"{slug(course.mountain)}.gpx")
     (out_dir / "timeline.md").write_text(res["timeline"], encoding="utf-8")
     return res

@@ -118,8 +118,9 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
                 if g > best[2]: best = (i, j, g)
         i, j, g = best
         if g > 0:
+            deg = math.degrees(math.atan(g / 100)); seg_m = int((x[j] - x[i]) * 1000)
             ax.axvspan(x[i], x[j], color=C["chart_point"], alpha=0.12)
-            ax.annotate(f"최대 경사 {g:.0f}%", ((x[i] + x[j]) / 2, base + (y.max() - y.min()) * 0.05), ha="center", va="bottom", fontsize=9, color=C["chart_point"], fontweight="bold",
+            ax.annotate(f"가장 가파른 {seg_m}m 구간 · 경사 {g:.0f}% ({deg:.0f}°)", ((x[i] + x[j]) / 2, base + (y.max() - y.min()) * 0.05), ha="center", va="bottom", fontsize=9, color=C["chart_point"], fontweight="bold",
                         bbox=dict(boxstyle="round,pad=0.25", fc="white", ec=C["chart_point"], alpha=0.9))
 
     # 5) 단풍 띠

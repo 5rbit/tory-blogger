@@ -269,8 +269,22 @@ def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str
     T = tokens(); C, F, S = T["color"], T["font"], T["space"]; m = S["margin"]
     img = Image.new("RGB", (size, size), C["bg"]); d = ImageDraw.Draw(img)
     d.rectangle([0, 0, size, 14], fill=C["accent"])
+    from src.media.design import pin
     draw_row(img, (m, 90), [("icon", "mountain"), course.mountain], F["title"], C["text"])
-    d.text((m, 210), subtitle or " → ".join(s.name.split("→")[0].strip() for s in course.segments) + " → " + course.segments[-1].name.split("→")[-1].strip(), font=font("subtitle"), fill=C["muted"])
+    # 경로 띠: 핀 아이콘(깃발→핀→산)을 선으로 잇고 아래에 지점 이름
+    names = [s.name.split("→")[0].strip() for s in course.segments] + [course.segments[-1].name.split("→")[-1].strip()]
+    if subtitle:
+        d.text((m, 210), subtitle, font=font("subtitle"), fill=C["muted"])
+    else:
+        n = len(names); ph = 56; y0 = 215; x_left, x_right = m + 30, size - m - 30
+        xs = [x_left + (x_right - x_left) * i / max(n - 1, 1) for i in range(n)]
+        d.line([(xs[0], y0 + ph), (xs[-1], y0 + ph)], fill=C["muted"], width=4)
+        lab = font(28)
+        for i, (xc, name) in enumerate(zip(xs, names)):
+            ic, fg = ("flag", "#2980B9") if i == 0 else (("mountain", C["chart_point"]) if i == n - 1 else ("pin", C["accent"]))
+            pn = pin(ic, ph, fg, bg=C["bg"]); img.paste(pn, (int(xc - pn.width / 2), y0), pn)
+            tw = d.textlength(name, font=lab); tx = min(max(xc - tw / 2, m), size - m - tw)
+            d.text((tx, y0 + ph + 12), name, font=lab, fill=C["muted"])
     elev = [e for s in course.segments for e in s.elev]
     gain = f"{max(elev) - min(elev):.0f} m" if elev else "-"
     lvl = max((_LABEL_TO_LEVEL.get(s.difficulty.replace(" ", ""), 0) for s in course.segments), default=0) or 3

@@ -22,12 +22,18 @@ log = get_logger("course_assets")
 @click.option("--date", "on", default=None, help="산행 날짜 YYYY-MM-DD (단풍 띠·일몰)")
 @click.option("--compare", is_flag=True, help="프리셋 4종을 모두 만들어 비교 (profile_<preset>.png)")
 @click.option("--clip", is_flag=True, help="클립용 세로 애니메이션(GIF/MP4)도 생성")
+@click.option("--osm", "trailhead", default=None, help="OpenStreetMap 에서 자동 생성: 들머리 이름 (config/trailheads.yaml)")
 @click.option("--sample", is_flag=True, help="파일 없이 내장 샘플 코스로 생성")
 @click.option("--dry-run", is_flag=True, help="고도 API 호출 생략")
-def main(exp, mountain, segments, start, access, view, season, preset, layers, on, compare, clip, sample, dry_run):
+def main(exp, mountain, segments, start, access, view, season, preset, layers, on, compare, clip, trailhead, sample, dry_run):
     from datetime import date as _d
     set_experiment(exp)
-    course = cv.sample_course() if sample else cv.find_course(mountain, segments.split(",") if segments else None)
+    if trailhead:
+        from src.research.trail_osm import build_course, fill_times
+        course = build_course(mountain, trailhead); cv.ensure_elevation(course, dry_run); fill_times(course)
+        log.info("구간: %s", " / ".join(f"{s.name} {s.length_km}km {s.up_min}분 {s.difficulty}" for s in course.segments))
+    else:
+        course = cv.sample_course() if sample else cv.find_course(mountain, segments.split(",") if segments else None)
     if not course:
         log.error("data/trails/ 에서 '%s' 코스를 찾지 못했습니다. GeoJSON/GPX 를 넣거나 --sample 로 확인하세요", mountain); sys.exit(1)
     out = data_dir() / "assets" / cv.slug(course.mountain)

@@ -35,7 +35,7 @@ def render(course, out: Path, stops: list[dict] | None = None, restaurants: list
         cs, es = s.coords, s.elev if len(s.elev) == len(s.coords) else [0] * len(s.coords)
         for i in range(len(cs) - 1):
             dx = haversine_km(cs[i], cs[i + 1]) * 1000; g = abs(es[i + 1] - es[i]) / dx * 100 if dx > 0 else 0
-            ax.plot([cs[i][0], cs[i + 1][0]], [cs[i][1], cs[i + 1][1]], color=grade_color(g), lw=4.5, solid_capstyle="round", zorder=2)
+            ax.plot([cs[i][0], cs[i + 1][0]], [cs[i][1], cs[i + 1][1]], color=grade_color(g), lw=3.5, solid_capstyle="round", zorder=2)
     lats = [q[1] for s in course.segments for q in s.coords]; lons = [q[0] for s in course.segments for q in s.coords]
     extra = [(d["lon"], d["lat"]) for d in (stops or []) + (restaurants or []) + (parking or [])]
     lats += [e[1] for e in extra]; lons += [e[0] for e in extra]

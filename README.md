@@ -31,6 +31,7 @@ cp .env.example .env   # 네이버 API 키 입력 (Claude는 로그인된 CLI �
 python scripts/weekly_plan.py --exp hiker --dry-run
 python scripts/daily_draft.py --exp hiker --dry-run
 python scripts/course_assets.py --exp hiker --mountain 북한산 --sample --dry-run
+python scripts/course_assets.py --exp hiker --mountain 관악산 --osm "관악산 서울대입구"   # OSM 에서 코스 자동 생성
 python scripts/attach_photos.py --exp hiker <초안.md> --keyword 북한산 --dry-run
 python scripts/transit_table.py --exp hiker --entry "북한산 우이동" --dry-run
 python scripts/export_excel.py --exp hiker            # 작업 데이터 엑셀 정리 (--import 로 승인 반영)

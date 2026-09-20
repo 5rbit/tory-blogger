@@ -200,7 +200,7 @@ def render(course, out: Path, layers: list[str] | None = None, preset: str = "st
             ins.plot([q[0] for q in other], [q[1] for q in other], color="#9FB3A3", lw=0.8, alpha=0.7)
         for k in range(len(pts) - 1):
             dxm = (x[k + 1] - x[k]) * 1000; g = abs(y[k + 1] - y[k]) / dxm * 100 if dxm > 0 else 0
-            ins.plot([lons[k], lons[k + 1]], [lats[k], lats[k + 1]], color=grade_color(g), lw=2.5, solid_capstyle="round")
+            ins.plot([lons[k], lons[k + 1]], [lats[k], lats[k + 1]], color=grade_color(g), lw=1.8, solid_capstyle="round")
         ins.annotate(marks[0][2], (lons[0], lats[0]), textcoords="offset points", xytext=(0, -11), fontsize=6, color="#2980B9", ha="center")
         ins.annotate(marks[-1][2], (lons[-1], lats[-1]), textcoords="offset points", xytext=(0, -11), fontsize=6, color=C["chart_point"], ha="center")
         aspect = 1 / math.cos(math.radians(sum(lats) / len(lats))); ins.set_aspect(aspect)

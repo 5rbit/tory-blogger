@@ -162,26 +162,55 @@ _CACHE = DATA / "trails" / "elevation_cache.json"
 def fetch_elevation(coords: list[tuple[float, float]], dry_run: bool = False) -> list[float]:
     cache = json.loads(_CACHE.read_text()) if _CACHE.exists() else {}
     keys = [f"{lat:.5f},{lon:.5f}" for lon, lat in coords]
-    missing = [k for k in keys if k not in cache]
+    missing = [k for k in keys if k not in cache or cache[k] in (None, 0)]
     if missing and not dry_run:
-        r = requests.post("https://api.open-elevation.com/api/v1/lookup", timeout=60,
-                          json={"locations": [{"latitude": float(k.split(",")[0]), "longitude": float(k.split(",")[1])} for k in missing]})
-        if r.status_code == 200:
-            for k, res in zip(missing, r.json().get("results", [])):
-                cache[k] = res.get("elevation")
-            _CACHE.parent.mkdir(parents=True, exist_ok=True); _CACHE.write_text(json.dumps(cache))
-        else:
-            log.warning("고도 API %s — 고도 없이 진행", r.status_code)
-    return [float(cache.get(k) or 0.0) for k in keys]
+        for i in range(0, len(missing), 100):        # 한 번에 100점씩
+            chunk = missing[i:i + 100]
+            r = requests.post("https://api.open-elevation.com/api/v1/lookup", timeout=60,
+                              json={"locations": [{"latitude": float(k.split(",")[0]), "longitude": float(k.split(",")[1])} for k in chunk]})
+            if r.status_code == 200:
+                for k, res in zip(chunk, r.json().get("results", [])):
+                    cache[k] = res.get("elevation")
+            else:
+                log.warning("고도 API %s — 일부 고도 없이 진행", r.status_code); break
+        _CACHE.parent.mkdir(parents=True, exist_ok=True); _CACHE.write_text(json.dumps(cache))
+    vals = [cache.get(k) for k in keys]
+    # 0/None 은 결측으로 보고 이웃값으로 선형 보간
+    idx = [i for i, v in enumerate(vals) if v not in (None, 0)]
+    if not idx:
+        return [0.0] * len(vals)
+    out = []
+    for i in range(len(vals)):
+        if vals[i] not in (None, 0):
+            out.append(float(vals[i])); continue
+        lo = max([j for j in idx if j < i], default=None); hi = min([j for j in idx if j > i], default=None)
+        if lo is None: out.append(float(vals[hi]))
+        elif hi is None: out.append(float(vals[lo]))
+        else: out.append(float(vals[lo]) + (float(vals[hi]) - float(vals[lo])) * (i - lo) / (hi - lo))
+    return out
+
+def densify(coords: list[tuple[float, float]], step_m: float = 40.0, max_pts: int = 250) -> list[tuple[float, float]]:
+    """좌표열을 step_m 간격으로 촘촘하게 (고도 표본용)."""
+    out = [coords[0]]
+    for a, b in zip(coords, coords[1:]):
+        d = haversine_km(a, b) * 1000; n = max(1, int(d // step_m))
+        out += [(a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n) for k in range(1, n + 1)]
+    if len(out) > max_pts:
+        out = resample(out, max_pts)
+    return out
+
+def smooth(vals: list[float], window: int = 5) -> list[float]:
+    h = window // 2
+    return [sum(vals[max(0, i - h):i + h + 1]) / len(vals[max(0, i - h):i + h + 1]) for i in range(len(vals))]
 
 def ensure_elevation(course: Course, dry_run: bool = False) -> None:
+    """고도가 없는 구간: 좌표를 40m 간격으로 촘촘히 만들고(좌표열 자체를 교체) 고도 조회 → 결측 보간 → 이동평균."""
     for s in course.segments:
-        if not s.elev or len(s.elev) != len(s.coords):
-            pts = resample(s.coords, 40)
-            e = fetch_elevation(pts, dry_run)
-            # 리샘플 지점 고도를 원 좌표 수에 맞게 선형 보간
-            n = len(s.coords)
-            s.elev = [e[min(int(i * (len(e) - 1) / max(n - 1, 1) + 0.5), len(e) - 1)] for i in range(n)]
+        if s.elev and len(s.elev) == len(s.coords):
+            continue
+        dense = densify(s.coords)
+        e = fetch_elevation(dense, dry_run)
+        s.coords = dense; s.elev = smooth(e, window=9) if not dry_run else e
 
 # ---- 1. 고도 프로파일 -----------------------------------------------------------------
 def _font():
@@ -309,7 +338,7 @@ def summary_card(course: Course, out: Path, subtitle: str = "", season_note: str
         y += S["panel_h"] + S["panel_gap"]
     if season_note:
         draw_row(img, (m, y + 20), [("icon", "leaf"), season_note], F["season"], C["accent"])
-    d.text((m, size - 80), "코스 데이터: 산림청 등산로정보 · 자세한 코스는 본문에서", font=font("caption"), fill=C["faint"])
+    d.text((m, size - 80), f"코스 데이터: {getattr(course, 'source', '산림청 등산로정보')} · 자세한 코스는 본문에서", font=font("caption"), fill=C["faint"])
     out.parent.mkdir(parents=True, exist_ok=True); img.save(out); return out
 
 # ---- 전체 -----------------------------------------------------------------------------

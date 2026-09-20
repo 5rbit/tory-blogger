@@ -62,6 +62,7 @@ def routes_near(lat: float, lon: float, max_stops: int = 3, session: requests.Se
                                  route_type=ROUTE_TYPE.get(str(d.get("routeType") or rt.get("busRouteType", "")), ""),
                                  first=str(d.get("firstBusTm", ""))[8:12] if len(str(d.get("firstBusTm", ""))) >= 12 else str(d.get("firstBusTm", "")).replace(":", "")[:4],
                                  last=str(d.get("lastBusTm", ""))[8:12] if len(str(d.get("lastBusTm", ""))) >= 12 else str(d.get("lastBusTm", "")).replace(":", "")[:4],
-                                 interval=str(d.get("term", "")), origin=str(d.get("stStationNm", "")), dest=str(d.get("edStationNm", "")), source="서울버스"))
+                                 interval=str(d.get("term", "")), origin=str(d.get("stStationNm", "")), dest=str(d.get("edStationNm", "")), source="서울버스",
+                                 lat=float(st.get("gpsY") or 0) or None, lon=float(st.get("gpsX") or 0) or None))
     log.info("서울버스: 정류소 %d개 노선 %d개", len(stops), len(out))
     return out

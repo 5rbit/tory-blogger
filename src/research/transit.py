@@ -33,6 +33,8 @@ class RouteInfo:
     origin: str = ""
     dest: str = ""
     source: str = "TAGO"
+    lat: float | None = None
+    lon: float | None = None
 
     @staticmethod
     def hhmm(v: str) -> str:
@@ -83,7 +85,8 @@ def routes_near(lat: float, lon: float, max_stops: int = 3, dry_run: bool = Fals
                                  route_type=str(info.get("routetp") or rt.get("routetp", "")), first=str(info.get("startvehicletime", "")),
                                  last=str(info.get("endvehicletime", "")), interval=str(info.get("intervaltime", "")),
                                  interval_sat=str(info.get("intervalsattime", "")), interval_sun=str(info.get("intervalsuntime", "")),
-                                 origin=str(info.get("startnodenm", "")), dest=str(info.get("endnodenm", ""))))
+                                 origin=str(info.get("startnodenm", "")), dest=str(info.get("endnodenm", "")),
+                                 lat=float(st.get("gpslati") or 0) or None, lon=float(st.get("gpslong") or 0) or None))
     cache[key] = [r.__dict__ for r in out]
     _CACHE.parent.mkdir(parents=True, exist_ok=True); _CACHE.write_text(json.dumps(cache, ensure_ascii=False))
     log.info("TAGO: 정류소 %d개 노선 %d개", min(max_stops, len(out) and max_stops), len(out))
@@ -132,3 +135,11 @@ def to_markdown(entry: str, exit_: str | None, dry_run: bool = False, on_weekend
         out.append(table(f"{E['finish']} 진출로 · {exit_} ({E['warning']} 막차 기준으로 하산 시각을 잡으세요)", transit_for(exit_, dry_run)))
     out.append("*출처: 국토교통부 TAGO · 서울특별시 버스 정보 · 시간표는 변경될 수 있으니 출발 전 확인*")
     return "\n\n".join(out)
+
+def stops_as_pois(rows: list[RouteInfo]) -> list[dict]:
+    """대중교통 표 결과 → 주변 지도용 정류장 핀 (좌표 있는 정류장만, 중복 제거)."""
+    seen: set[str] = set(); out = []
+    for r in rows:
+        if r.lat and r.lon and r.stop not in seen:
+            seen.add(r.stop); out.append({"name": r.stop, "lat": r.lat, "lon": r.lon})
+    return out

@@ -20,7 +20,7 @@ def waypoints(course) -> list[tuple[str, tuple[float, float], str]]:
     return [(f"{circled(i)} {n}", c, ic) for i, (n, c, ic) in enumerate(pts)]
 
 def render(course, out: Path, stops: list[dict] | None = None, restaurants: list[dict] | None = None, parking: list[dict] | None = None,
-           size_in: float = 7.2) -> Path:
+           size_in: float = 7.2, view_cones: list[dict] | None = None) -> Path:
     """stops/restaurants/parking: [{"name", "lat", "lon"}]"""
     import matplotlib; matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -58,6 +58,8 @@ def render(course, out: Path, stops: list[dict] | None = None, restaurants: list
             pins.append((d["lon"], d["lat"], ic, color, 26)); names.append(f"{code}{k} {d['name']}")
         if names:
             legend.append((ic, title, names))
+    if view_cones:
+        draw_view_cones(ax, view_cones)
     # 북쪽·축척
     ax.annotate("N", xy=(0.95, 0.93), xytext=(0.95, 0.85), xycoords="axes fraction", textcoords="axes fraction", ha="center", fontsize=9, arrowprops=dict(arrowstyle="-|>", color="#333", lw=1.2))
     x0, x1 = ax.get_xlim(); y0, y1 = ax.get_ylim(); deg = 0.5 / (111.32 * math.cos(math.radians(sum(lats) / len(lats))))
@@ -99,3 +101,29 @@ def to_gpx(course, out: Path) -> Path:
         lines.append(f'  <wpt lat="{lat:.6f}" lon="{lon:.6f}"><name>{label}</name></wpt>')
     lines += ["  </trk>", "</gpx>"]
     out.parent.mkdir(parents=True, exist_ok=True); out.write_text("\n".join(lines), encoding="utf-8"); return out
+
+def places_for_editor(course, stops=None, restaurants=None, parking=None) -> list[dict]:
+    """네이버 에디터 '장소' 첨부 순서 (지도 번호와 동일). fill_editor 가 검색어로 사용."""
+    out = [{"order": i + 1, "query": label.split(" ", 1)[1], "kind": "코스"} for i, (label, _, _) in enumerate(waypoints(course))]
+    n = len(out)
+    for items, kind in [(stops or [], "정류장"), (parking or [], "주차"), (restaurants or [], "식당")]:
+        for d in items:
+            n += 1; out.append({"order": n, "query": d["name"], "kind": kind})
+    return out
+
+def places_block(places: list[dict]) -> str:
+    lines = ["<!-- 장소 첨부 순서 (fill_editor 가 읽음) -->", "<!-- places:"] + [f"{p['order']}. [{p['kind']}] {p['query']}" for p in places] + ["-->"]
+    return "\n".join(lines)
+
+# ---- 7. 조망 방향 부채꼴 ----------------------------------------------------------------------
+def draw_view_cones(ax, cones: list[dict], color: str = "#2980B9"):
+    """cones: [{"lat","lon","bearing"(도, 북=0 시계방향),"width"(도),"label"}] — 정상·전망대에서 보이는 방향."""
+    import math
+    from matplotlib.patches import Wedge
+    x0, x1 = ax.get_xlim(); r = (x1 - x0) * 0.09
+    for c in cones:
+        theta = 90 - c["bearing"]; w = c.get("width", 50)
+        asp = 1 / math.cos(math.radians(c["lat"]))
+        ax.add_patch(Wedge((c["lon"], c["lat"]), r, theta - w / 2, theta + w / 2, color=color, alpha=0.18, zorder=1.5))
+        ex, ey = c["lon"] + r * 1.15 * math.cos(math.radians(theta)), c["lat"] + r * 1.15 * math.sin(math.radians(theta)) / asp
+        ax.annotate(c.get("label", "조망"), (ex, ey), ha="center", fontsize=7, color=color, fontweight="bold")

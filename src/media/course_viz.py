@@ -151,6 +151,7 @@ def sample_course() -> Course:
     c.stops = [{"name": "우이동 종점", "lat": 37.6638, "lon": 127.0142}, {"name": "북한산우이역", "lat": 37.6631, "lon": 127.0122}]
     c.restaurants = [{"name": "우이동 손두부", "lat": 37.6618, "lon": 127.0150}, {"name": "도선사 입구 칼국수", "lat": 37.6605, "lon": 127.0092}]
     c.parking = [{"name": "우이동 주차장", "lat": 37.6645, "lon": 127.0128}]
+    c.view_cones = [{"lat": 37.6612, "lon": 126.9898, "bearing": 200, "width": 60, "label": "서울 시내 조망"}]
     c.context_lines = [[(126.9898, 37.6612), (126.9850, 37.6560), (126.9800, 37.6500)], [(127.0040, 37.6580), (127.0080, 37.6520), (127.0110, 37.6470)],
                        [(126.9930, 37.6605), (126.9960, 37.6660), (127.0010, 37.6700)]]
     return c
@@ -316,7 +317,7 @@ def slug(s: str) -> str:
     return re.sub(r"[^\w가-힣]+", "_", s).strip("_")
 
 def build_all(course: Course, out_dir: Path, start: str = "09:00", access: int = 3, view: int = 4, season_note: str = "", dry_run: bool = False,
-              preset: str = "standard", layers: list[str] | None = None, on=None, lat: float | None = None, lon: float | None = None) -> dict:
+              preset: str = "standard", layers: list[str] | None = None, on=None, lat: float | None = None, lon: float | None = None, clip: bool = False) -> dict:
     from src.media.profile import render
     ensure_elevation(course, dry_run)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -327,7 +328,13 @@ def build_all(course: Course, out_dir: Path, start: str = "09:00", access: int =
            "card": summary_card(course, out_dir / "card.png", season_note=season_note),
            "timeline": timeline_table(course, start)}
     from src.media.area_map import render as area_render, to_gpx
-    res["area_map"] = area_render(course, out_dir / "area_map.png", getattr(course, "stops", None), getattr(course, "restaurants", None), getattr(course, "parking", None))
+    from src.media.area_map import places_for_editor, places_block
+    st, rs, pk = getattr(course, "stops", None), getattr(course, "restaurants", None), getattr(course, "parking", None)
+    res["area_map"] = area_render(course, out_dir / "area_map.png", st, rs, pk, view_cones=getattr(course, "view_cones", None))
     res["gpx"] = to_gpx(course, out_dir / f"{slug(course.mountain)}.gpx")
+    res["places"] = places_for_editor(course, st, rs, pk); (out_dir / "places.md").write_text(places_block(res["places"]), encoding="utf-8")
+    if clip:
+        from src.media.clip import render as clip_render
+        res.update({f"clip_{k}": v for k, v in clip_render(course, out_dir / "clip.gif").items()})
     (out_dir / "timeline.md").write_text(res["timeline"], encoding="utf-8")
     return res

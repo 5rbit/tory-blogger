@@ -21,9 +21,10 @@ log = get_logger("course_assets")
 @click.option("--layers", default=None, help="레이어 직접 지정 (쉼표): slope_fill,time_axis,markers,hardest,stats,foliage_band,sunset,roundtrip,minimap")
 @click.option("--date", "on", default=None, help="산행 날짜 YYYY-MM-DD (단풍 띠·일몰)")
 @click.option("--compare", is_flag=True, help="프리셋 4종을 모두 만들어 비교 (profile_<preset>.png)")
+@click.option("--clip", is_flag=True, help="클립용 세로 애니메이션(GIF/MP4)도 생성")
 @click.option("--sample", is_flag=True, help="파일 없이 내장 샘플 코스로 생성")
 @click.option("--dry-run", is_flag=True, help="고도 API 호출 생략")
-def main(exp, mountain, segments, start, access, view, season, preset, layers, on, compare, sample, dry_run):
+def main(exp, mountain, segments, start, access, view, season, preset, layers, on, compare, clip, sample, dry_run):
     from datetime import date as _d
     set_experiment(exp)
     course = cv.sample_course() if sample else cv.find_course(mountain, segments.split(",") if segments else None)
@@ -36,7 +37,7 @@ def main(exp, mountain, segments, start, access, view, season, preset, layers, o
         cv.ensure_elevation(course, dry_run); out.mkdir(parents=True, exist_ok=True); lon, lat = course.segments[0].coords[0]
         for pname in PRESETS:
             render(course, out / f"profile_{pname}.png", None, pname, start, on_d, lat, lon); log.info("비교용 생성: profile_%s.png", pname)
-    res = cv.build_all(course, out, start, access, view, season, dry_run, preset, layers.split(",") if layers else None, on_d)
+    res = cv.build_all(course, out, start, access, view, season, dry_run, preset, layers.split(",") if layers else None, on_d, clip=clip)
     log.info("생성: %s", ", ".join(str(res[k]) for k in ["profile", "radar", "card", "area_map", "gpx"]))
     print(res["timeline"])
     print(f"\n초안에 넣을 마크다운:\n![{course.mountain} 고도 프로파일]({res['profile']})\n![{course.mountain} 난이도]({res['radar']})")

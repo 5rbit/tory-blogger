@@ -1,6 +1,6 @@
 """Playwright로 네이버 SmartEditor ONE을 채운다. 발행 버튼은 절대 자동 클릭하지 않는다."""
 from __future__ import annotations
-import time
+import re, time
 from pathlib import Path
 from src.common import CONFIG, current_experiment, env, get_logger, load_yaml, pipeline_config
 log = get_logger(__name__)
@@ -35,6 +35,9 @@ def fill(draft: Path, dry_run: bool = False) -> str | None:
         for para in body.split("\n\n"):
             page.keyboard.type(para, delay=15); page.keyboard.press("Enter"); time.sleep(0.8)
         # TODO: 태그 입력, [사진: ...] 슬롯 강조 표시
+        places = re.findall(r"^\d+\. \[(.*?)\] (.*)$", text, flags=re.M)
+        if places:
+            log.info("장소 첨부 순서 (에디터 '장소' 버튼에서 검색): %s", " → ".join(f"{k}:{q}" for k, q in places))
         log.info("에디터 채움 완료. 사진을 첨부하고 발행 버튼을 직접 누르세요.")
         url = _wait_for_publish(page, sel, blog_id)
         ctx.close()

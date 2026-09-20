@@ -24,7 +24,14 @@ def restaurants_near(trailhead: str, keyword: str = "맛집", display: int = 5, 
     items = r.json().get("items", [])
     for it in items:
         it["title"] = re.sub(r"<[^>]+>", "", it.get("title", ""))
+        try:   # 지역 검색 mapx/mapy 는 WGS84 × 1e7 정수
+            it["lon"], it["lat"] = int(it["mapx"]) / 1e7, int(it["mapy"]) / 1e7
+        except (KeyError, ValueError, TypeError):
+            pass
     return items
+
+def as_pois(items: list[dict]) -> list[dict]:
+    return [{"name": i["title"], "lat": i["lat"], "lon": i["lon"]} for i in items if i.get("lat") and i.get("lon")]
 
 def to_markdown_table(items: list[dict]) -> str:
     rows = ["| 🍲 식당 | 분류 | 주소 |", "|---|---|---|"]
